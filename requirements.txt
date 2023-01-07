@@ -1,5 +1,4 @@
 pandas
 pillow
 matplotlib
-torch
-torchvision
+tensorflow
