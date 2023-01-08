@@ -1,7 +1,9 @@
+from keras import optimizers
 
-optimizers = [
-    "adam",
-    "ftrl",
-    "nadam",
-    "adamax"
+
+OPTIMIZERS = [
+    optimizers.Adam(),
+    optimizers.Nadam(),
+    optimizers.Adamax(),
+    optimizers.Adadelta()
 ]
