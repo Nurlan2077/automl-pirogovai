@@ -1,8 +1,10 @@
 import tensorflow as tf
 from PIL import Image
+from keras import layers
 
 
 DEFAULT_IMAGE_SIZE = 256
+DEFAULT_BATCH_SIZE = 32
 
 
 def generate_train_val_ds(path: str, image_size: tuple, batch_size: int, val_split=0.2):
@@ -25,8 +27,9 @@ def generate_train_val_ds(path: str, image_size: tuple, batch_size: int, val_spl
     return train_ds, val_ds
 
 
-def get_batch_size(dataset_elements_num):
-    pass
+def get_batch_size(dataset_size: int = 0) -> int:
+    # batch size = available GPU memory bytes / 4 / (size of tensors + trainable parameters)
+    return DEFAULT_BATCH_SIZE
 
 
 def get_image_size(img: Image) -> int:
@@ -48,6 +51,6 @@ def get_neurones_num():
     pass
 
 
-def rescale_image_pixels(image):
-    return image
-
+def rescale_dataset(ds: tf.data.Dataset) -> None:
+    normalization_layer = layers.Rescaling(1./255)
+    ds.map(lambda x, y: (normalization_layer(x), y))
