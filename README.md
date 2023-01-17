@@ -1,12 +1,24 @@
-# automl-pirogovai
+Prefer to develop for Linux because of Docker issues on Windows.
 
-## Правила работы в репозитории
-1.  Есть ветки ml, backend, frontend, которые соответствуют компонентам архитектуры.<br/>
-1.1.  В ветке ml работают [Александр](https://github.com/aamochalov) и [Нурлан](https://github.com/Nurlan2077).<br/>
-1.2.  В ветке backend работают [Мария](https://github.com/MSenso) и [Матвей](https://github.com/michigantsev).<br/>
-1.3.  В ветке frontend работает Дарина.<br/>
-2.  Все компоненты (ml, backend, frontend) развёртываются отдельно (микросервисная архитектура), общаются по API.<br/>
-2.1.  Контракты по API предварительно обсуждаются обеими сторонами (ml и backend, backend и frontend).<br/>
-2.2.  В readme каждой ветки будет инструкция по развертыванию компонента этой ветки.<br/>
-3.  Для каждой единицы нового функционала создаётся отдельная ветка от базовой и сливается в базовую по готовности.<br/>
-3.1.  В главных ветках (ml, backend, frontend) только рабочий оттестированный код, который локально могут развёртывать другие члены команды.<br/>
+
+What to install:
+
+<code>pip install mariadb</code>
+
+<code>pip install fastapi</code>
+
+<code>sudo apt install uvicorn</code>
+
+install MariaDB Community from there: https://mariadb.com/downloads/
+
+install Docker and Docker Engine from there: https://docs.docker.com/engine/install/ubuntu/
+
+How to run:
+
+- app: <code>python3 main.py</code>
+- docker-compose: <code>docker compose up -d</code>
+- DB: <code>mariadb -h 127.0.0.1 -P 3306 -u root</code>
+
+How to export a dump: mysqldump -h 127.0.0.1 -P 3306 -u root auto_model_learning -B > YYYY-MM-DD.sql
+
+How to work with dumps: https://simplebackups.com/blog/the-complete-mysqldump-guide-with-examples/#importing-a-mysqldump
