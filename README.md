@@ -46,8 +46,6 @@ Some useful commands:
 
 <code>docker logs container_name [optional: -f] </code> - check logs of specific container. Use flag -f to do it in real-time
 
-<code>mariadb -h 127.0.0.1 -P 3306 -u root</code> - enter command line MariaDB interface
-
-<code>mysqldump -h 127.0.0.1 -P 3306 -u root auto_model_learning -B > path/to/env/dumps/YYYY-MM-DD.sql</code> - export db dump manually (in case scheduler is not working or if you need a new dump right now). Also make sure to update MOST_RECENT variable in .env file so it points to the dump you need
+How to export a dump: mysqldump -h 127.0.0.1 -P 3306 -u root auto_model_learning -B > path/to/env/dumps/YYYY-MM-DD.sql
 
 How to work with dumps: https://simplebackups.com/blog/the-complete-mysqldump-guide-with-examples/#importing-a-mysqldump
