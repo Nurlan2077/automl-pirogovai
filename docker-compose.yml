@@ -1,0 +1,39 @@
+version: "3.8"
+services:
+  db:
+    image: mariadb:latest
+    container_name: db
+    restart: always
+    ports:
+      - "3306:3306"
+    hostname: "mariadb-pirogov.net"
+    networks:
+      - pirogov-network
+    volumes:
+      - ./env/dumps/${MOST_RECENT}.sql:/docker-entrypoint-initdb.d/latest.sql
+    environment:
+      - MARIADB_ALLOW_EMPTY_ROOT_PASSWORD="yes"
+      - MOST_RECENT
+
+  pirogov-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    image: pirogov-backend
+    container_name: pirogov-backend
+    restart: always
+    ports:
+      - "8000:8000"
+    networks:
+     - pirogov-network
+    secrets:
+      - email_secret
+
+secrets:
+  email_secret:
+    file: ./env/email_secrets
+
+networks:
+  pirogov-network:
