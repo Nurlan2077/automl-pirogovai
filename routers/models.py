@@ -27,10 +27,12 @@ class Metric(BaseModel):
     id: int
     name: str
 
+
 class ModelMetric(BaseModel):
     model_id: int
     metric_id: int
     metric_value: float
+
 
 class ModelSummary(BaseModel):
     session_id: int
@@ -41,6 +43,7 @@ class ModelSummary(BaseModel):
     augmentation: int
     learning_speed: float
     epoch_count: int
+
 
 class Model(BaseModel):
     id: int
@@ -53,12 +56,15 @@ class Model(BaseModel):
     learning_speed: float
     epoch_count: int
 
+
 class OptimizerSummary(BaseModel):
     name: str
+
 
 class Optimizer(BaseModel):
     id: int
     name: str
+
 
 class UserSession(BaseModel):
     id: int
@@ -66,10 +72,12 @@ class UserSession(BaseModel):
     data_markup_path: str
     user_id: int
 
+
 class UserSessionSummary(BaseModel):
     dataset_path: str
     data_markup_path: str
     user_id: int
+
 
 class User(BaseModel):
     id: int
