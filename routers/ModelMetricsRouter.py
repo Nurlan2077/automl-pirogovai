@@ -3,14 +3,9 @@
 
 from Connection import Connection
 from fastapi import APIRouter, status, Response
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from models import ModelMetric
 import mariadb
 
-class ModelMetric(BaseModel):
-    model_id: int
-    metric_id: int
-    metric_value: float
 
 def connect():
     response = Response()
@@ -79,7 +74,8 @@ def init_router():
         def update_model_metric(metric_id: int, model_id: int, model_metric_body: ModelMetric, response: Response):
             old_metric = get_model_metric(model_id, metric_id, response)
             if response.status_code == 200:
-                metric = ModelMetric(metric_id=model_metric_body.metric_id, model_id=model_metric_body.model_id, metric_value=model_metric_body.metric_value)
+                metric = ModelMetric(metric_id=model_metric_body.metric_id, model_id=model_metric_body.model_id,
+                                     metric_value=model_metric_body.metric_value)
                 updates = compare_model_metrics(old_metric, metric)
                 statement, inserts = make_update_statement(metric_id, updates)
                 if len(inserts) > 1:
@@ -110,12 +106,13 @@ def init_router():
                 cursor.execute("select * from model_metric where metric_id = ? and model_id = ?", (metric_id, model_id))
                 metric_raw = cursor.fetchall()
                 if len(metric_raw) == 0:
-                    raise mariadb.Error(f"Model metric with model id = {model_id} and metric id = {metric_id} not found")
+                    raise mariadb.Error(
+                        f"Model metric with model id = {model_id} and metric id = {metric_id} not found")
             except mariadb.Error as e:
                 response.status_code = status.HTTP_404_NOT_FOUND
                 response.body = f"Model metric with model id = {model_id} and metric id = {metric_id} not found"
-            model_metric = ModelMetric(id=model_id[0][0], metric_id=metric_raw[0][1],
-                            metric_value=metric_raw[0][2])
+            model_metric = ModelMetric(id=metric_raw[0][0], metric_id=metric_raw[0][1],
+                                       metric_value=metric_raw[0][2])
             return model_metric
 
 
