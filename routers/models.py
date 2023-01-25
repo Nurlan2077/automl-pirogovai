@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+import json
+
+from pydantic import BaseModel, parse_obj_as
 
 
 class FeatureCnnSummary(BaseModel):
@@ -83,3 +85,16 @@ class User(BaseModel):
     id: int
     name: str
     email: str
+
+
+def json_to_schema(json_bytes, schema_type: BaseModel.__class__):
+    schema = json.loads(json_bytes.decode('utf-8'))
+    return parse_obj_as(schema_type, schema)
+
+
+def json_array_to_schema(json_array, schema_type: BaseModel.__class__):
+    items = []
+    for row in json_array:
+        schema = json.loads(row.decode('utf-8'))
+        items.append(parse_obj_as(schema_type, schema))
+    return items

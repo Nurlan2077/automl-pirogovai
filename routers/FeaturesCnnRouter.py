@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
+from fastapi.encoders import jsonable_encoder
 
 from Connection import Connection
 from fastapi import APIRouter, status, Response
-from models import FeatureCnn, FeatureCnnSummary
+from models import FeatureCnn, FeatureCnnSummary, json_to_schema
 from fastapi.responses import JSONResponse
 import mariadb
 
@@ -77,7 +78,7 @@ def init_router():
                 if len(result) > 0:
                     for row in result:
                         feature_cnns.append(FeatureCnn(id=row[0], name=row[1]))
-                return feature_cnns
+                return jsonable_encoder(feature_cnns)
             except mariadb.Error:
                 return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                                     content="Could not get feature cnns")
@@ -91,24 +92,29 @@ def init_router():
                     return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
                                         content=f"Feature cnn with id = {feature_cnn_id} not found")
                 feature_cnn = FeatureCnn(id=feature_raw[0][0], name=feature_raw[0][1])
-                return feature_cnn
+                return JSONResponse(content=jsonable_encoder(feature_cnn))
             except mariadb.Error:
                 return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                                     content=f"Could not get feature cnn with id = {feature_cnn_id}")
 
         @router.put("/{feature_cnn_id}", status_code=status.HTTP_200_OK)
         def update_feature_cnn(feature_cnn_id: int, feature_cnn: FeatureCnnSummary):
-            old_feature_cnn = get_feature_cnn(feature_cnn_id)
-            feature_cnn = FeatureCnn(id=feature_cnn_id, name=feature_cnn.name)
-            updates = compare_features(old_feature_cnn, feature_cnn)
-            statement, inserts = make_update_statement(feature_cnn_id, updates)
-            if len(inserts) > 1:
-                try:
-                    cursor.execute(statement, inserts)
-                    connection.commit()
-                except mariadb.Error as e:
-                    return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
-                                        content=f"Could not update feature cnn with body: {str(feature_cnn)}")
+            get_response = get_feature_cnn(feature_cnn_id)
+            if get_response.status_code == status.HTTP_200_OK:
+                old_feature_cnn = json_to_schema(get_response.body, FeatureCnn)
+                feature_cnn = FeatureCnn(id=feature_cnn_id, name=feature_cnn.name)
+                updates = compare_features(old_feature_cnn, feature_cnn)
+                statement, inserts = make_update_statement(feature_cnn_id, updates)
+                if len(inserts) > 1:
+                    try:
+                        cursor.execute(statement, inserts)
+                        connection.commit()
+                    except mariadb.Error:
+                        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                                            content=f"Could not update feature cnn with body: {str(feature_cnn)}")
+            else:
+                return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                                    content=f"Could not get feature cnn with id = {feature_cnn_id}")
 
 
 init_router()
