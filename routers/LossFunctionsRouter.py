@@ -3,16 +3,9 @@
 
 from Connection import Connection
 from fastapi import APIRouter, status, Response
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from models import LossFunction, LossFunctionSummary
 import mariadb
 
-class LossFunctionSummary(BaseModel):
-    name: str
-
-class LossFunction(BaseModel):
-    id: int
-    name: str
 
 def connect():
     response = Response()
@@ -23,15 +16,19 @@ def connect():
             break
     return response
 
+
 router = APIRouter(prefix="/loss-functions",
-                            tags=["loss-functions"],
-                            responses={404: {"description": "Loss functions router not found"}})
+                   tags=["loss-functions"],
+                   responses={404: {"description": "Loss functions router not found"}})
+
+
 def compare_functions(old_function, new_function):
     updates = []
     for old_pair, new_pair in zip(old_function, new_function):
         if old_pair[1] != new_pair[1]:
             updates.append((new_pair[0], new_pair[1]))
     return updates
+
 
 def make_update_statement(loss_function_id, updates):
     statement = "update loss_function set "
@@ -42,7 +39,8 @@ def make_update_statement(loss_function_id, updates):
         inserts.append(pair[1])
     inserts.append(loss_function_id)
     statement += ", ".join(updates_row) + " where id = ?"
-    return statement, (*inserts, )
+    return statement, (*inserts,)
+
 
 def init_router():
     response = connect()
@@ -51,15 +49,15 @@ def init_router():
     else:
         connection = response.body
         cursor = response.body.cursor()
+
         @router.post("/", status_code=status.HTTP_201_CREATED)
         def add_loss_function(loss_function_body: LossFunctionSummary, response: Response):
             try:
                 cursor.execute("insert into loss_function(name) values (?)", (loss_function_body.name,))
                 connection.commit()
-            except Exception  as e:
+            except Exception as e:
                 response.body = f"Could not create loss function with body: {str(loss_function_body)}"
                 response.status_code = status.HTTP_400_BAD_REQUEST
-
 
         @router.delete("/{loss_function_id}", status_code=status.HTTP_200_OK)
         def delete_loss_function(loss_function_id: int, response: Response):
@@ -82,11 +80,11 @@ def init_router():
             except mariadb.Error as e:
                 response.status_code = status.HTTP_400_BAD_REQUEST
                 response.body = "Could not get loss functions, error = {e}"
-    
+
         @router.get("/{loss_function_id}", status_code=status.HTTP_200_OK)
         def get_loss_function(loss_function_id: int, response: Response):
             try:
-                cursor.execute("select * from loss_function where id = ?", (loss_function_id, ))
+                cursor.execute("select * from loss_function where id = ?", (loss_function_id,))
                 function_raw = cursor.fetchall()
                 if len(function_raw) == 0:
                     raise mariadb.Error(f"Loss function with id = {loss_function_id} not found")
@@ -109,4 +107,6 @@ def init_router():
                 except mariadb.Error as e:
                     response.status_code = status.HTTP_400_BAD_REQUEST
                     response.body = f"Could not update loss function with body: {str(loss_function)}"
+
+
 init_router()
