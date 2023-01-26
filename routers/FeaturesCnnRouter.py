@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
+from fastapi.encoders import jsonable_encoder
 
 from Connection import Connection
 from fastapi import APIRouter, status, Response
-from models import FeatureCnn, FeatureCnnSummary
+from models import FeatureCnn, FeatureCnnSummary, json_to_schema
+from fastapi.responses import JSONResponse
 import mariadb
 
 
@@ -51,24 +53,24 @@ def init_router():
         cursor = response.body.cursor()
 
         @router.post("/", status_code=status.HTTP_201_CREATED)
-        def add_feature_cnn(feature_cnn_body: FeatureCnnSummary, response: Response):
+        def add_feature_cnn(feature_cnn_body: FeatureCnnSummary):
             try:
                 cursor.execute("insert into features_cnn(name) values (?)", (feature_cnn_body.name,))
                 connection.commit()
-            except Exception as e:
-                response.body = f"Could not create feature cnn with body: {str(feature_cnn_body)}"
-                response.status_code = status.HTTP_400_BAD_REQUEST
+            except mariadb.Error:
+                return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                                    content=f"Could not create feature cnn with body: {str(feature_cnn_body)}")
 
         @router.delete("/{feature_cnn_id}", status_code=status.HTTP_200_OK)
-        def delete_feature_cnn(feature_cnn_id: int, response: Response):
+        def delete_feature_cnn(feature_cnn_id: int):
             try:
                 cursor.execute("delete from features_cnn where id = ?", (feature_cnn_id,))
-            except mariadb.Error as e:
-                response.status_code = status.HTTP_400_BAD_REQUEST
-                response.body = f"Could not delete feature cnn with id = {str(feature_cnn_id)}"
+            except mariadb.Error:
+                return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                                    content=f"Could not delete feature cnn with id = {str(feature_cnn_id)}")
 
         @router.get("/", status_code=status.HTTP_200_OK)
-        def get_feature_cnns(response: Response):
+        def get_feature_cnns():
             try:
                 cursor.execute("select * from features_cnn")
                 feature_cnns = []
@@ -76,37 +78,42 @@ def init_router():
                 if len(result) > 0:
                     for row in result:
                         feature_cnns.append(FeatureCnn(id=row[0], name=row[1]))
-                return feature_cnns
-            except mariadb.Error as e:
-                response.status_code = status.HTTP_400_BAD_REQUEST
-                response.body = "Could not get feature_cnns, error = {e}"
+                return jsonable_encoder(feature_cnns)
+            except mariadb.Error:
+                return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                                    content="Could not get feature cnns")
 
         @router.get("/{feature_cnn_id}", status_code=status.HTTP_200_OK)
-        def get_feature_cnn(feature_cnn_id: int, response: Response):
+        def get_feature_cnn(feature_cnn_id: int):
             try:
                 cursor.execute("select * from features_cnn where id = ?", (feature_cnn_id,))
                 feature_raw = cursor.fetchall()
                 if len(feature_raw) == 0:
-                    raise mariadb.Error(f"Feature cnn with id = {feature_cnn_id} not found")
-            except mariadb.Error as e:
-                response.status_code = status.HTTP_404_NOT_FOUND
-                response.body = f"feature cnn with id = {feature_cnn_id} not found"
-            feature_cnn = FeatureCnn(id=feature_raw[0][0], name=feature_raw[0][1])
-            return feature_cnn
+                    return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
+                                        content=f"Feature cnn with id = {feature_cnn_id} not found")
+                feature_cnn = FeatureCnn(id=feature_raw[0][0], name=feature_raw[0][1])
+                return JSONResponse(content=jsonable_encoder(feature_cnn))
+            except mariadb.Error:
+                return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                                    content=f"Could not get feature cnn with id = {feature_cnn_id}")
 
         @router.put("/{feature_cnn_id}", status_code=status.HTTP_200_OK)
-        def update_feature_cnn(feature_cnn_id: int, feature_cnn: FeatureCnnSummary, response: Response):
-            old_feature_cnn = get_feature_cnn(feature_cnn_id, response)
-            feature_cnn = FeatureCnn(id=feature_cnn_id, name=feature_cnn.name)
-            updates = compare_features(old_feature_cnn, feature_cnn)
-            statement, inserts = make_update_statement(feature_cnn_id, updates)
-            if len(inserts) > 1:
-                try:
-                    cursor.execute(statement, inserts)
-                    connection.commit()
-                except mariadb.Error as e:
-                    response.status_code = status.HTTP_400_BAD_REQUEST
-                    response.body = f"Could not update feature cnn with body: {str(feature_cnn)}"
+        def update_feature_cnn(feature_cnn_id: int, feature_cnn: FeatureCnnSummary):
+            get_response = get_feature_cnn(feature_cnn_id)
+            if get_response.status_code == status.HTTP_200_OK:
+                old_feature_cnn = json_to_schema(get_response.body, FeatureCnn)
+                feature_cnn = FeatureCnn(id=feature_cnn_id, name=feature_cnn.name)
+                updates = compare_features(old_feature_cnn, feature_cnn)
+                statement, inserts = make_update_statement(feature_cnn_id, updates)
+                if len(inserts) > 1:
+                    try:
+                        cursor.execute(statement, inserts)
+                        connection.commit()
+                    except mariadb.Error:
+                        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                                            content=f"Could not update feature cnn with body: {str(feature_cnn)}")
+            else:
+                return get_response
 
 
 init_router()
