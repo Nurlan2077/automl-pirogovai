@@ -6,11 +6,11 @@ from Connection import Connection
 from fastapi import FastAPI, status, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-import sys   
+import sys
 
-if sys.path[0] + "/routers" not in sys.path: 
-    sys.path.append(sys.path[0] + "/routers")  
-    
+if sys.path[0] + "/routers" not in sys.path:
+    sys.path.append(sys.path[0] + "/routers")
+
 import MetricsRouter
 import ModelsRouter
 import LossFunctionsRouter
@@ -29,8 +29,11 @@ app.include_router(OptimizersRouter.router)
 app.include_router(UsersRouter.router)
 app.include_router(UserSessionsRouter.router)
 app.include_router(ModelMetricsRouter.router)
-uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
+
+
+uvicorn.run(app, host="0.0.0.0", port=8000)
