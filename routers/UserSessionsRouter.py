@@ -122,5 +122,13 @@ def init_router():
             else:
                 return get_response
 
+        @router.post("/{session_id}/learn")
+        def launch_learning(session_id: int, parameters: dict):
+            get_response = get_session(session_id)
+            if get_response.status_code == status.HTTP_200_OK:
+                session = json_to_schema(get_response.body, UserSession)
+                dataset_path = session.dataset_path
+                markup_path = session.data_markup_path
+
 
 init_router()
