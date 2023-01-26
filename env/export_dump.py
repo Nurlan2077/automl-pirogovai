@@ -4,18 +4,18 @@
 import datetime
 import os
 
-
 user = "root"
 host = "127.0.0.1"
 port = 3306
 db = "auto_model_learning"
+
 
 def most_recent_correct_dump(dump_names):
     copy_names = dump_names.copy()
     copy_names.reverse()
     most_recent_name = ''
     for name in copy_names:
-        with open("./dumps/"+name, "r") as f:
+        with open("./dumps/" + name, "r") as f:
             if '-- Dump completed' in f.read():
                 most_recent_name = name
                 break
@@ -25,21 +25,24 @@ def most_recent_correct_dump(dump_names):
 def get_time():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+
 def try_to_read(command):
     connected = False
     for i in range(3):
-        if len(os.popen(select_cmd).read()) > 0:
+        if len(os.popen(command).read()) > 0:
             connected = True
             break
     return connected
 
+
 def update_most_recent(date):
     envs = []
-    with open(".env", "r") as f:
+    with open("../.env", "r") as f:
         envs = f.read().split()
     new_envs = replace_most_recent(envs, date)
-    with open(".env", "w+") as f:
+    with open("../.env", "w+") as f:
         f.write(new_envs)
+
 
 def replace_most_recent(envs, date):
     new_envs = []
@@ -48,6 +51,7 @@ def replace_most_recent(envs, date):
             new_envs.append(env)
     new_envs.append(f'MOST_RECENT="{date}"')
     return f"{os.linesep}".join(new_envs)
+
 
 def get_latest_log_date(path):
     with open(path, "r") as f:
@@ -59,16 +63,19 @@ def get_latest_log_date(path):
             return compare_date_with_today(date)
         return None
 
+
 def compare_date_with_today(latest):
     today_date = datetime.datetime.now().date()
     latest_date = datetime.datetime.strptime(latest, "%Y-%m-%d").date()
     return (today_date - latest_date).days
+
 
 def replace_log(path):
     latest_date = get_latest_log_date(path)
     if latest_date is not None and latest_date > 0:
         with open(path, "w") as f:
             f.write('')
+
 
 path = f"{os.getcwd()}/dumps/"
 today = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -84,7 +91,8 @@ if try_to_read(select_cmd):
         print(f"{get_time()} Database dumped to {today}.sql")
         update_most_recent(today)
 else:
-    print(f'{get_time()} It seems db container is not running or there is no data inside. Check db container state and mounted volumes')
+    print(f'{get_time()} It seems db container is not running or there is no data inside. Check db container state '
+          f'and mounted volumes')
     dump_names = os.popen("cd ./dumps; ls").read().split()
     most_correct_recent_name = most_recent_correct_dump(dump_names)
     if len(most_correct_recent_name) == 0:
