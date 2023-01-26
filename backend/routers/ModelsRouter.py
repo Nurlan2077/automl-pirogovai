@@ -6,7 +6,7 @@ from fastapi import APIRouter, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
-from Connection import Connection
+from .connection import Connection
 from .models import Model, ModelSummary
 
 connection, cursor = Connection().try_to_connect()

@@ -17,7 +17,7 @@ services:
 
   pirogov-backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
     depends_on:
       - db

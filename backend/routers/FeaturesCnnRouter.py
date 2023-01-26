@@ -5,34 +5,15 @@ from fastapi import APIRouter, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
-from Connection import Connection
+from .connection import Connection
 from .models import FeatureCnn, FeatureCnnSummary, json_to_schema
+from .utils import compare_items, make_update_statement
 
 connection, cursor = Connection().try_to_connect()
 
 router = APIRouter(prefix="/features-cnn",
                    tags=["features-cnns"],
                    responses={404: {"description": "Features cnn router not found"}})
-
-
-def compare_features(old_feature, new_feature):
-    updates = []
-    for old_pair, new_pair in zip(old_feature, new_feature):
-        if old_pair[1] != new_pair[1]:
-            updates.append((new_pair[0], new_pair[1]))
-    return updates
-
-
-def make_update_statement(feature_cnn_id, updates):
-    statement = "update features_cnn set "
-    updates_row = []
-    inserts = []
-    for pair in updates:
-        updates_row.append(f"{pair[0]} = ?")
-        inserts.append(pair[1])
-    inserts.append(feature_cnn_id)
-    statement += ", ".join(updates_row) + " where id = ?"
-    return statement, (*inserts,)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
@@ -90,8 +71,8 @@ def update_feature_cnn(feature_cnn_id: int, feature_cnn: FeatureCnnSummary):
     if get_response.status_code == status.HTTP_200_OK:
         old_feature_cnn = json_to_schema(get_response.body, FeatureCnn)
         feature_cnn = FeatureCnn(id=feature_cnn_id, name=feature_cnn.name)
-        updates = compare_features(old_feature_cnn, feature_cnn)
-        statement, inserts = make_update_statement(feature_cnn_id, updates)
+        updates = compare_items(old_feature_cnn, feature_cnn)
+        statement, inserts = make_update_statement([feature_cnn_id], "features_cnn", ["id"], updates)
         if len(inserts) > 1:
             try:
                 cursor.execute(statement, inserts)

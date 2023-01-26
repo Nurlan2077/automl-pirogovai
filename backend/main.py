@@ -2,8 +2,8 @@
 # coding: utf-8
 
 from fastapi import FastAPI
-from routers import MetricsRouter, ModelsRouter, LossFunctionsRouter, FeaturesCnnRouter, OptimizersRouter, \
-    UsersRouter, UserSessionsRouter, ModelMetricsRouter
+from routers import LossFunctionsRouter, OptimizersRouter, MetricsRouter, ModelsRouter, UserSessionsRouter, \
+    FeaturesCnnRouter, ModelMetricsRouter, UsersRouter
 
 app = FastAPI()
 app.include_router(MetricsRouter.router)

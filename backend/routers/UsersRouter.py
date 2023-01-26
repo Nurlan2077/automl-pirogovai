@@ -1,38 +1,19 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from Connection import Connection
+from .connection import Connection
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 import mariadb
 from .models import User, json_to_schema
+from .utils import compare_items, make_update_statement
 
 connection, cursor = Connection().try_to_connect()
 
 router = APIRouter(prefix="/users",
                    tags=["users"],
                    responses={404: {"description": "Users router not found"}})
-
-
-def compare_users(old_user, new_user):
-    updates = []
-    for old_pair, new_pair in zip(old_user, new_user):
-        if old_pair[1] != new_pair[1]:
-            updates.append((new_pair[0], new_pair[1]))
-    return updates
-
-
-def make_update_statement(user_id, updates):
-    statement = "update users set "
-    users_row = []
-    inserts = []
-    for pair in updates:
-        users_row.append(f"{pair[0]} = ?")
-        inserts.append(pair[1])
-    inserts.append(user_id)
-    statement += ", ".join(users_row) + " where id = ?"
-    return statement, (*inserts,)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
@@ -92,8 +73,8 @@ def update_user(user_id: int, user: User):
     if get_response.status_code == status.HTTP_200_OK:
         old_user = json_to_schema(get_response.body, User)
         user = User(id=user.id)
-        updates = compare_users(old_user, user)
-        statement, inserts = make_update_statement(user_id, updates)
+        updates = compare_items(old_user, user)
+        statement, inserts = make_update_statement([user_id], "users", ["id"], updates)
         if len(inserts) > 1:
             try:
                 cursor.execute(statement, inserts)

@@ -5,34 +5,15 @@ from fastapi import APIRouter, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
-from Connection import Connection
+from .connection import Connection
 from .models import Metric, MetricSummary, json_to_schema
+from .utils import compare_items, make_update_statement
 
 connection, cursor = Connection().try_to_connect()
 
 router = APIRouter(prefix="/metrics",
                    tags=["metrics"],
                    responses={404: {"description": "Metrics router not found"}})
-
-
-def compare_metrics(old_metric, new_metric):
-    updates = []
-    for old_pair, new_pair in zip(old_metric, new_metric):
-        if old_pair[1] != new_pair[1]:
-            updates.append((new_pair[0], new_pair[1]))
-    return updates
-
-
-def make_update_statement(metric_id, updates):
-    statement = "update metric set "
-    updates_row = []
-    inserts = []
-    for pair in updates:
-        updates_row.append(f"{pair[0]} = ?")
-        inserts.append(pair[1])
-    inserts.append(metric_id)
-    statement += ", ".join(updates_row) + " where id = ?"
-    return statement, (*inserts,)
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def add_metric(metric_body: MetricSummary):
@@ -61,8 +42,8 @@ def update_metric(metric_id: int, metric_body: MetricSummary):
     if get_response.status_code == 200:
         old_metric = json_to_schema(get_response.body, Metric)
         metric = Metric(id=metric_id, name=metric_body.name)
-        updates = compare_metrics(old_metric, metric)
-        statement, inserts = make_update_statement(metric_id, updates)
+        updates = compare_items(old_metric, metric)
+        statement, inserts = make_update_statement([metric_id], "metric", ["id"], updates)
         if len(inserts) > 1:
             try:
                 cursor.execute(statement, inserts)

@@ -6,34 +6,15 @@ from fastapi import APIRouter, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
-from Connection import Connection
+from .connection import Connection
 from .models import Optimizer, OptimizerSummary, json_to_schema
+from .utils import compare_items, make_update_statement
 
 connection, cursor = Connection().try_to_connect()
 
 router = APIRouter(prefix="/optimizers",
                    tags=["optimizers"],
                    responses={404: {"description": "Optimizer router not found"}})
-
-
-def compare_optimizers(old_optimizer, new_optimizer):
-    updates = []
-    for old_pair, new_pair in zip(old_optimizer, new_optimizer):
-        if old_pair[1] != new_pair[1]:
-            updates.append((new_pair[0], new_pair[1]))
-    return updates
-
-
-def make_update_statement(optimizer_id, updates):
-    statement = "update optimizer set "
-    updates_row = []
-    inserts = []
-    for pair in updates:
-        updates_row.append(f"{pair[0]} = ?")
-        inserts.append(pair[1])
-    inserts.append(optimizer_id)
-    statement += ", ".join(updates_row) + " where id = ?"
-    return statement, (*inserts,)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
@@ -93,8 +74,8 @@ def update_optimizer(optimizer_id: int, optimizer: OptimizerSummary):
     if get_response.status_code == status.HTTP_200_OK:
         old_optimizer = json_to_schema(get_response.body, Optimizer)
         optimizer = Optimizer(id=optimizer_id, name=optimizer.name)
-        updates = compare_optimizers(old_optimizer, optimizer)
-        statement, inserts = make_update_statement(optimizer_id, updates)
+        updates = compare_items(old_optimizer, optimizer)
+        statement, inserts = make_update_statement([optimizer_id], "optimizer", ["id"], updates)
         if len(inserts) > 1:
             try:
                 cursor.execute(statement, inserts)
