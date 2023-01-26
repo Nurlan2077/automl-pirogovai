@@ -8,6 +8,11 @@ from fastapi.responses import JSONResponse
 from .connection import Connection
 from .models import FeatureCnn, FeatureCnnSummary, json_to_schema
 from .utils import compare_items, make_update_statement
+import logging
+
+logging.basicConfig(level=logging.INFO,
+                    format="%(levelname)s:%(asctime)s%(message)s",
+                    datefmt="%Y-%m-%d %H:%M:%S")
 
 connection, cursor = Connection().try_to_connect()
 
@@ -21,7 +26,9 @@ def add_feature_cnn(feature_cnn_body: FeatureCnnSummary):
     try:
         cursor.execute("insert into features_cnn(name) values (?)", (feature_cnn_body.name,))
         connection.commit()
-    except mariadb.Error:
+        logging.info(f"Feature cnn with body = {str(feature_cnn_body)} has been created successfully")
+    except mariadb.Error as e:
+        logging.error(f"Could not create feature cnn with body: {str(feature_cnn_body)}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content=f"Could not create feature cnn with body: {str(feature_cnn_body)}")
 
@@ -30,7 +37,9 @@ def add_feature_cnn(feature_cnn_body: FeatureCnnSummary):
 def delete_feature_cnn(feature_cnn_id: int):
     try:
         cursor.execute("delete from features_cnn where id = ?", (feature_cnn_id,))
-    except mariadb.Error:
+        logging.info(f"feature cnn with id = {feature_cnn_id} has been deleted successfully")
+    except mariadb.Error as e:
+        logging.error(f"Could not delete feature cnn with id = {str(feature_cnn_id)}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content=f"Could not delete feature cnn with id = {str(feature_cnn_id)}")
 
@@ -45,7 +54,8 @@ def get_feature_cnns():
             for row in result:
                 feature_cnns.append(FeatureCnn(id=row[0], name=row[1]))
         return jsonable_encoder(feature_cnns)
-    except mariadb.Error:
+    except mariadb.Error as e:
+        logging.error(f"Could not get feature cnns. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content="Could not get feature cnns")
 
@@ -56,11 +66,13 @@ def get_feature_cnn(feature_cnn_id: int):
         cursor.execute("select * from features_cnn where id = ?", (feature_cnn_id,))
         feature_raw = cursor.fetchall()
         if len(feature_raw) == 0:
+            logging.warning(f"Feature cnn with id = {feature_cnn_id} not found")
             return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
                                 content=f"Feature cnn with id = {feature_cnn_id} not found")
         feature_cnn = FeatureCnn(id=feature_raw[0][0], name=feature_raw[0][1])
         return JSONResponse(content=jsonable_encoder(feature_cnn))
-    except mariadb.Error:
+    except mariadb.Error as e:
+        logging.error(f"Could not get feature cnn with id = {feature_cnn_id}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content=f"Could not get feature cnn with id = {feature_cnn_id}")
 
@@ -77,7 +89,8 @@ def update_feature_cnn(feature_cnn_id: int, feature_cnn: FeatureCnnSummary):
             try:
                 cursor.execute(statement, inserts)
                 connection.commit()
-            except mariadb.Error:
+            except mariadb.Error as e:
+                logging.error(f"Could not update feature cnn with body: {str(feature_cnn)}. Error: {e}")
                 return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                                     content=f"Could not update feature cnn with body: {str(feature_cnn)}")
     else:
