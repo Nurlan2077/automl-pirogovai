@@ -6,8 +6,9 @@ from fastapi import APIRouter, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
-from Connection import Connection
+from .connection import Connection
 from .models import UserSession, UserSessionSummary, json_to_schema
+from .utils import make_update_statement, compare_items
 
 connection, cursor = Connection().try_to_connect()
 
@@ -15,25 +16,6 @@ router = APIRouter(prefix="/user-sessions",
                    tags=["user-sessions"],
                    responses={404: {"description": "User session router not found"}})
 
-
-def compare_sessions(old_user_session, new_user_session):
-    updates = []
-    for old_pair, new_pair in zip(old_user_session, new_user_session):
-        if old_pair[1] != new_pair[1]:
-            updates.append((new_pair[0], new_pair[1]))
-    return updates
-
-
-def make_update_statement(user_session_id, updates):
-    statement = "update user_session set "
-    session_row = []
-    inserts = []
-    for pair in updates:
-        session_row.append(f"{pair[0]} = ?")
-        inserts.append(pair[1])
-    inserts.append(user_session_id)
-    statement += ", ".join(session_row) + " where id = ?"
-    return statement, (*inserts,)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
@@ -98,8 +80,8 @@ def update_session(session_id: int, session: UserSessionSummary):
         old_session = json_to_schema(get_response.body, UserSession)
         session = UserSession(id=session_id, dataset_path=session.dataset_path,
                               data_markup_path=session.data_markup_path, user_id=session.user_id)
-        updates = compare_sessions(old_session, session)
-        statement, inserts = make_update_statement(session_id, updates)
+        updates = compare_items(old_session, session)
+        statement, inserts = make_update_statement([session_id], "user_session", ["id"], updates)
         if len(inserts) > 1:
             try:
                 cursor.execute(statement, inserts)

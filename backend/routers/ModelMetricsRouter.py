@@ -6,35 +6,15 @@ from fastapi import APIRouter, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
-from Connection import Connection
+from .connection import Connection
 from .models import ModelMetric, json_to_schema
+from .utils import compare_items, make_update_statement
 
 connection, cursor = Connection().try_to_connect()
 
 router = APIRouter(prefix="/model-metrics",
                    tags=["model-metrics"],
                    responses={404: {"description": "Model metrics router not found"}})
-
-
-def compare_model_metrics(old_metric, new_metric):
-    updates = []
-    for old_pair, new_pair in zip(old_metric, new_metric):
-        if old_pair[1] != new_pair[1]:
-            updates.append((new_pair[0], new_pair[1]))
-    return updates
-
-
-def make_update_statement(metric_id, model_id, updates):
-    statement = "update model_metric set "
-    updates_row = []
-    inserts = []
-    for pair in updates:
-        updates_row.append(f"{pair[0]} = ?")
-        inserts.append(pair[1])
-    inserts.append(model_id)
-    inserts.append(metric_id)
-    statement += ", ".join(updates_row) + " where model_id = ? and metric_id = ?"
-    return statement, (*inserts,)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
@@ -66,8 +46,9 @@ def update_model_metric(metric_id: int, model_id: int, model_metric_body: ModelM
         old_model_metric = json_to_schema(get_response.body, ModelMetric)
         model_metric = ModelMetric(metric_id=model_metric_body.metric_id, model_id=model_metric_body.model_id,
                                    metric_value=model_metric_body.metric_value)
-        updates = compare_model_metrics(old_model_metric, model_metric)
-        statement, inserts = make_update_statement(metric_id, model_id, updates)
+        updates = compare_items(old_model_metric, model_metric)
+        statement, inserts = make_update_statement([metric_id, model_id], "model_metric", ["metric_id", "model_id"],
+                                                   updates)
         if len(inserts) > 1:
             try:
                 cursor.execute(statement, inserts)

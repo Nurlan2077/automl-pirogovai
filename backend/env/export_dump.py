@@ -37,10 +37,10 @@ def try_to_read(command):
 
 def update_most_recent(date):
     envs = []
-    with open("../.env", "r") as f:
+    with open("../../.env", "r") as f:
         envs = f.read().split()
     new_envs = replace_most_recent(envs, date)
-    with open("../.env", "w+") as f:
+    with open("../../.env", "w+") as f:
         f.write(new_envs)
 
 
@@ -80,7 +80,7 @@ def replace_log(path):
 path = f"{os.getcwd()}/dumps/"
 today = datetime.datetime.now().strftime("%Y-%m-%d")
 select_cmd = f'mariadb -h {host} -P {port} -u {user} -e "use auto_model_learning; show tables;"'
-replace_log("./logs/dump_log.txt")
+replace_log("logs/dump_log.txt")
 if try_to_read(select_cmd):
     path += f"{today}.sql"
     if os.path.exists(path):

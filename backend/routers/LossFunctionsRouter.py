@@ -6,34 +6,15 @@ from fastapi import APIRouter, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
-from Connection import Connection
+from .connection import Connection
 from .models import LossFunction, LossFunctionSummary, json_to_schema
+from .utils import compare_items, make_update_statement
 
 connection, cursor = Connection().try_to_connect()
 
 router = APIRouter(prefix="/loss-functions",
                    tags=["loss-functions"],
                    responses={404: {"description": "Loss functions router not found"}})
-
-
-def compare_functions(old_function, new_function):
-    updates = []
-    for old_pair, new_pair in zip(old_function, new_function):
-        if old_pair[1] != new_pair[1]:
-            updates.append((new_pair[0], new_pair[1]))
-    return updates
-
-
-def make_update_statement(loss_function_id, updates):
-    statement = "update loss_function set "
-    updates_row = []
-    inserts = []
-    for pair in updates:
-        updates_row.append(f"{pair[0]} = ?")
-        inserts.append(pair[1])
-    inserts.append(loss_function_id)
-    statement += ", ".join(updates_row) + " where id = ?"
-    return statement, (*inserts,)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
@@ -93,8 +74,8 @@ def update_loss_function(loss_function_id: int, loss_function: LossFunctionSumma
     if get_response.status_code == status.HTTP_200_OK:
         old_loss_function = json_to_schema(get_response.body, LossFunction)
         loss_function = LossFunction(id=loss_function_id, name=loss_function.name)
-        updates = compare_functions(old_loss_function, loss_function)
-        statement, inserts = make_update_statement(loss_function_id, updates)
+        updates = compare_items(old_loss_function, loss_function)
+        statement, inserts = make_update_statement([loss_function_id], "loss_function", ["id"], updates)
         if len(inserts) > 1:
             try:
                 cursor.execute(statement, inserts)
