@@ -9,13 +9,17 @@ from fastapi.responses import JSONResponse
 from .connection import Connection
 from .models import UserSession, UserSessionSummary, json_to_schema
 from .utils import make_update_statement, compare_items
+import logging
+
+logging.basicConfig(level=logging.INFO,
+                    format="%(levelname)s:  %(asctime)s  %(message)s",
+                    datefmt="%Y-%m-%d %H:%M:%S")
 
 connection, cursor = Connection().try_to_connect()
 
 router = APIRouter(prefix="/user-sessions",
                    tags=["user-sessions"],
                    responses={404: {"description": "User session router not found"}})
-
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)

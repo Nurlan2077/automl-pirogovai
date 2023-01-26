@@ -4,6 +4,11 @@
 from fastapi import FastAPI
 from routers import LossFunctionsRouter, OptimizersRouter, MetricsRouter, ModelsRouter, UserSessionsRouter, \
     FeaturesCnnRouter, ModelMetricsRouter, UsersRouter
+import logging
+
+logging.basicConfig(level=logging.INFO,
+                    format="%(levelname)s:  %(asctime)s  %(message)s",
+                    datefmt="%Y-%m-%d %H:%M:%S")
 
 app = FastAPI()
 app.include_router(MetricsRouter.router)
@@ -19,5 +24,3 @@ app.include_router(ModelMetricsRouter.router)
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
-
-

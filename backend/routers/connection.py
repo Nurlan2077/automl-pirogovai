@@ -3,6 +3,11 @@
 
 import mariadb
 from fastapi import status
+import logging
+
+logging.basicConfig(level=logging.INFO,
+                    format="%(levelname)s:  %(asctime)s  %(message)s",
+                    datefmt="%Y-%m-%d %H:%M:%S")
 
 
 class Connection:
@@ -24,7 +29,8 @@ class Connection:
                 database="auto_model_learning")
             self.set(status.HTTP_200_OK, connection)
         except Exception as e:
-            self.set(status.HTTP_200_OK, f"Error connecting to MariaDB Platform: {e}")
+            self.set(status.HTTP_200_OK, "Error connecting to MariaDB Platform:")
+            logging.error(f"Error connecting to MariaDB Platform: {e}")
 
     def try_to_connect(self, times=3):
         connection = None

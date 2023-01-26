@@ -8,6 +8,11 @@ from fastapi.encoders import jsonable_encoder
 import mariadb
 from .models import User, json_to_schema
 from .utils import compare_items, make_update_statement
+import logging
+
+logging.basicConfig(level=logging.INFO,
+                    format="%(levelname)s:  %(asctime)s  %(message)s",
+                    datefmt="%Y-%m-%d %H:%M:%S")
 
 connection, cursor = Connection().try_to_connect()
 

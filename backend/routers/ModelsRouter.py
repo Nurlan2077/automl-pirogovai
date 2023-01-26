@@ -8,7 +8,11 @@ from fastapi.responses import JSONResponse
 
 from .connection import Connection
 from .models import Model, ModelSummary
+import logging
 
+logging.basicConfig(level=logging.INFO,
+                    format="%(levelname)s:  %(asctime)s  %(message)s",
+                    datefmt="%Y-%m-%d %H:%M:%S")
 connection, cursor = Connection().try_to_connect()
 
 router = APIRouter(prefix="/models",

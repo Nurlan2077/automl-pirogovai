@@ -8,6 +8,11 @@ from fastapi.responses import JSONResponse
 from .connection import Connection
 from .models import Metric, MetricSummary, json_to_schema
 from .utils import compare_items, make_update_statement
+import logging
+
+logging.basicConfig(level=logging.INFO,
+                    format="%(levelname)s:  %(asctime)s  %(message)s",
+                    datefmt="%Y-%m-%d %H:%M:%S")
 
 connection, cursor = Connection().try_to_connect()
 
