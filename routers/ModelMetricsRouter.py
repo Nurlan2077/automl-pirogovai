@@ -13,7 +13,7 @@ def connect():
     response = Response()
     for i in range(3):
         response = Response()
-        Connection().connect(response)
+        Connection().connect()
         if response.status_code == 200:
             break
     return response
