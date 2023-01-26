@@ -3,7 +3,9 @@
 
 from Connection import Connection
 from fastapi import APIRouter, status, Response
-from models import Metric, MetricSummary
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
+from models import Metric, MetricSummary, json_to_schema
 import mariadb
 
 
@@ -51,28 +53,29 @@ def init_router():
         cursor = response.body.cursor()
 
         @router.post("/", status_code=status.HTTP_201_CREATED)
-        def add_metric(metric_body: MetricSummary, response: Response):
+        def add_metric(metric_body: MetricSummary):
             try:
                 cursor.execute(
                     "insert into metric(name) values (?)",
-                    (metric_body.name, ))
+                    (metric_body.name,))
                 connection.commit()
-            except mariadb.Error as e:
-                response.status_code = status.HTTP_400_BAD_REQUEST
-                response.body = f"Could not create metric with body: {str(metric_body)}"
+            except mariadb.Error:
+                return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                                    content=f"Could not create metric with body: {str(metric_body)}")
 
         @router.delete("/{metric_id}", status_code=status.HTTP_200_OK)
-        def delete_metric(metric_id: int, response: Response):
+        def delete_metric(metric_id: int):
             try:
                 cursor.execute("delete from metric where id = ?", (metric_id,))
-            except mariadb.Error as e:
-                response.status_code = status.HTTP_400_BAD_REQUEST
-                response.body = f"Could not delete metric with id = {str(metric_id)}"
+            except mariadb.Error:
+                return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                                    content=f"Could not delete metric with id = {str(metric_id)}")
 
         @router.put("/{metric_id}", status_code=status.HTTP_200_OK)
-        def update_metric(metric_id: int, metric_body: MetricSummary, response: Response):
-            old_metric = get_metric(metric_id, response)
-            if response.status_code == 200:
+        def update_metric(metric_id: int, metric_body: MetricSummary):
+            get_response = get_metric(metric_id)
+            if get_response.status_code == 200:
+                old_metric = json_to_schema(get_response.body, Metric)
                 metric = Metric(id=metric_id, name=metric_body.name)
                 updates = compare_metrics(old_metric, metric)
                 statement, inserts = make_update_statement(metric_id, updates)
@@ -80,12 +83,14 @@ def init_router():
                     try:
                         cursor.execute(statement, inserts)
                         connection.commit()
-                    except mariadb.Error as e:
-                        response.status_code = status.HTTP_400_BAD_REQUEST
-                        response.body = f"Could not update metric with body: {str(metric_body)}"
+                    except mariadb.Error:
+                        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                                            content=f"Could not update metric with body: {str(metric_body)}")
+            else:
+                return get_response
 
         @router.get("/", status_code=status.HTTP_200_OK)
-        def get_metrics(response: Response):
+        def get_metrics():
             try:
                 cursor.execute("select * from metric")
                 metrics = []
@@ -93,23 +98,26 @@ def init_router():
                 if len(result) > 0:
                     for row in result:
                         metrics.append(Metric(id=row[0], name=row[1]))
-                return metrics
-            except mariadb.Error as e:
-                response.status_code = status.HTTP_400_BAD_REQUEST
-                response.body = "Could not get metrics, error = {e}"
+                return JSONResponse(status_code=status.HTTP_200_OK,
+                                    content=jsonable_encoder(metrics))
+            except mariadb.Error:
+                return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                                    content="Could not get metrics")
 
         @router.get("/{metric_id}", status_code=status.HTTP_200_OK)
-        def get_metric(metric_id: int, response: Response):
+        def get_metric(metric_id: int):
             try:
                 cursor.execute("select * from metric where id = ?", (metric_id,))
                 metric_raw = cursor.fetchall()
                 if len(metric_raw) == 0:
-                    raise mariadb.Error(f"Metric with id = {metric_id} not found")
-            except mariadb.Error as e:
-                response.status_code = status.HTTP_404_NOT_FOUND
-                response.body = f"Metric with id = {metric_id} not found"
-            metric = Metric(id=metric_raw[0][0], name=metric_raw[0][1])
-            return metric
+                    return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
+                                        content=f"Metric with id = {metric_id} not found")
+                metric = Metric(id=metric_raw[0][0], name=metric_raw[0][1])
+                return JSONResponse(status_code=status.HTTP_200_OK,
+                                    content=jsonable_encoder(metric))
+            except mariadb.Error:
+                return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                                    content=f"Could not get metric with id = {metric_id}")
 
 
 init_router()
