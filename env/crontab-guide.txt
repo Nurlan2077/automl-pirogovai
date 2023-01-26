@@ -1,5 +1,0 @@
-1. install crontab
-2. run crontab -e
-3. Add "@daily /usr/bin/python3 /absolute/path/to/repository/env/export_dump.py >> /absolute/path/to/repository/env/logs/dump_log.txt"
-
-Montitoring cron with: grep CRON /var/log/syslog
