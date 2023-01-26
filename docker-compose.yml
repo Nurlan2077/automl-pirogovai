@@ -28,12 +28,6 @@ services:
       - "8000:8000"
     networks:
      - pirogov-network
-    secrets:
-      - email_secret
-
-secrets:
-  email_secret:
-    file: ./env/email_secrets
 
 networks:
   pirogov-network:
