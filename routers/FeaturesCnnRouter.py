@@ -113,8 +113,7 @@ def init_router():
                         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                                             content=f"Could not update feature cnn with body: {str(feature_cnn)}")
             else:
-                return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
-                                    content=f"Could not get feature cnn with id = {feature_cnn_id}")
+                return get_response
 
 
 init_router()
