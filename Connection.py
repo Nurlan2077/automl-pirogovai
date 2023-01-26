@@ -2,25 +2,38 @@
 # coding: utf-8
 
 import mariadb
-from fastapi import Response, status
+from fastapi import status
+
 
 class Connection:
     def __init__(self):
-        self.connection = None
-        self.cursor = None
-        
-    def connect(self, response):
-        try:
-            self.connection = mariadb.connect(
-                                user="root",
-                                password="",
-                                host="127.0.0.1",
-                                port=3306,
-                                database="auto_model_learning")
-            self.cursor = self.connection.cursor()
-            response.status_code = status.HTTP_200_OK
-            response.body = self.connection
-        except mariadb.Error as e:
-            response.status_code = status.HTTP_500_Internal_Server_Error
-            response.body = f"Error connecting to MariaDB Platform: {e}"
+        self.status_code = status.HTTP_201_CREATED
+        self.body = None
 
+    def set(self, status_code, body):
+        self.status_code = status_code
+        self.body = body
+
+    def connect(self):
+        try:
+            connection = mariadb.connect(
+                user="root",
+                password="",
+                host="mariadb-pirogov.net",
+                port=3306,
+                database="auto_model_learning")
+            self.set(status.HTTP_200_OK, connection)
+        except Exception as e:
+            self.set(status.HTTP_200_OK, f"Error connecting to MariaDB Platform: {e}")
+
+    def try_to_connect(self, times=3):
+        connection = None
+        cursor = None
+        for i in range(times):
+            self.connect()
+            if self.status_code == status.HTTP_200_OK:
+                break
+        if self.status_code == status.HTTP_200_OK:
+            connection = self.body
+            cursor = connection.cursor()
+        return connection, cursor

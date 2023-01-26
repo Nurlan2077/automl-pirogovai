@@ -1,24 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
-import uvicorn
 
-from Connection import Connection
-from fastapi import FastAPI, status, Response
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-import sys
-
-if sys.path[0] + "/routers" not in sys.path:
-    sys.path.append(sys.path[0] + "/routers")
-
-import MetricsRouter
-import ModelsRouter
-import LossFunctionsRouter
-import FeaturesCnnRouter
-import OptimizersRouter
-import UsersRouter
-import UserSessionsRouter
-import ModelMetricsRouter
+from fastapi import FastAPI
+from routers import MetricsRouter, ModelsRouter, LossFunctionsRouter, FeaturesCnnRouter, OptimizersRouter, \
+    UsersRouter, UserSessionsRouter, ModelMetricsRouter
 
 app = FastAPI()
 app.include_router(MetricsRouter.router)
@@ -36,4 +21,3 @@ async def root():
     return {"message": "Hello World"}
 
 
-uvicorn.run(app, host="0.0.0.0", port=8000)
