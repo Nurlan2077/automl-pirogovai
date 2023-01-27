@@ -30,7 +30,8 @@ def add_model(_model_body: ModelSummary):
              _model_body.optimizer_id, _model_body.loss_function_id, _model_body.augmentation,
              _model_body.learning_speed, _model_body.epoch_count))
         connection.commit()
-    except mariadb.Error:
+    except mariadb.Error as e:
+        logging.error(f"Could not create model with body: {str(_model_body)}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content=f"Could not create model with body: {str(_model_body)}")
 
@@ -48,7 +49,8 @@ def get_models():
                                     augmetation=row[6], learning_speed=row[7], epoch_count=row[8]))
         return JSONResponse(status_code=status.HTTP_200_OK,
                             content=jsonable_encoder(models))
-    except mariadb.Error:
+    except mariadb.Error as e:
+        logging.error(f"Could not get models. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content="Could not get models")
 
@@ -59,6 +61,7 @@ def get_model(model_id: int):
         cursor.execute("select * from model where id = ?", (model_id,))
         row = cursor.fetchall()
         if len(row) == 0:
+            logging.warning(f"Model with id = {model_id} not found")
             return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
                                 content=f"Model with id = {model_id} not found")
         model = Model(id=row[0][0], session_id=row[0][1], name=row[0][2],
@@ -66,6 +69,7 @@ def get_model(model_id: int):
                       augmetation=row[0][6], learning_speed=row[0][7], epoch_count=row[0][8])
         return JSONResponse(status_code=status.HTTP_200_OK,
                             content=jsonable_encoder(model))
-    except mariadb.Error:
+    except mariadb.Error as e:
+        logging.error(f"Could not get model with id = {model_id}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content=f"Could not get model with id = {model_id}")
