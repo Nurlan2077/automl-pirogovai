@@ -29,7 +29,9 @@ def add_model_metric(model_metric_body: ModelMetric):
             "insert into model_metric(model_id, metric_id, metric_value) values (?, ?, ?)",
             (model_metric_body.model_id, model_metric_body.metric_id, model_metric_body.metric_value))
         connection.commit()
-    except mariadb.Error:
+        logging.info(f"Model metric with body = {str(model_metric_body)} has been created successfully")
+    except mariadb.Error as e:
+        logging.error(f"Could not create model metric with body: {str(model_metric_body)}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content=f"Could not create model metric with body: {str(model_metric_body)}")
 
@@ -38,7 +40,10 @@ def add_model_metric(model_metric_body: ModelMetric):
 def delete_model_metric(metric_id: int, model_id: int):
     try:
         cursor.execute("delete from model_metric where metric_id = ? and model_id = ?", (metric_id, model_id))
-    except mariadb.Error:
+        logging.info(f"Model metric with id = {str(metric_id)} has been deleted successfully")
+    except mariadb.Error as e:
+        logging.error(f"Could not delete model metric with metric id = {str(metric_id)} and model id = {str(model_id)}."
+                      f" Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content=f"Could not delete model metric with metric id = {str(metric_id)} and "
                                     f"model id = {str(model_id)}")
@@ -58,10 +63,10 @@ def update_model_metric(metric_id: int, model_id: int, model_metric_body: ModelM
             try:
                 cursor.execute(statement, inserts)
                 connection.commit()
-            except mariadb.Error:
+            except mariadb.Error as e:
+                logging.error(f"Could not update model metric with body: {str(model_metric_body)}. Error: {e}")
                 return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
-                                    content=f"Could not update model metric with body:"
-                                            f" {str(model_metric_body)}")
+                                    content=f"Could not update model metric with body: {str(model_metric_body)}")
     else:
         return get_response
 
@@ -77,7 +82,8 @@ def get_model_metrics():
                 metrics.append(ModelMetric(model_id=row[0], metric_id=row[1], metric_value=row[2]))
         return JSONResponse(status_code=status.HTTP_200_OK,
                             content=jsonable_encoder(metrics))
-    except mariadb.Error:
+    except mariadb.Error as e:
+        logging.error(f"Could not get model metrics. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content="Could not get model metrics")
 
@@ -88,6 +94,7 @@ def get_model_metric(model_id: int, metric_id: int):
         cursor.execute("select * from model_metric where metric_id = ? and model_id = ?", (metric_id, model_id))
         metric_raw = cursor.fetchall()
         if len(metric_raw) == 0:
+            logging.warning(f"Model metric with model id = {model_id} and metric id = {metric_id} not found")
             return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
                                 content=f"Model metric with model id = {model_id} and metric id = {metric_id} "
                                         f"not found")
@@ -95,7 +102,8 @@ def get_model_metric(model_id: int, metric_id: int):
                                    metric_value=metric_raw[0][2])
         return JSONResponse(status_code=status.HTTP_200_OK,
                             content=jsonable_encoder(model_metric))
-    except mariadb.Error:
+    except mariadb.Error as e:
+        logging.error(f"Could not get model metric with model id = {model_id} and metric id = {metric_id}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content=f"Could not get model metric with model id = {model_id} "
                                     f"and metric id = {metric_id}")
