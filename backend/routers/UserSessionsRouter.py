@@ -9,13 +9,17 @@ from fastapi.responses import JSONResponse
 from .connection import Connection
 from .models import UserSession, UserSessionSummary, json_to_schema
 from .utils import make_update_statement, compare_items
+import logging
+
+logging.basicConfig(level=logging.INFO,
+                    format="%(levelname)s:  %(asctime)s  %(message)s",
+                    datefmt="%Y-%m-%d %H:%M:%S")
 
 connection, cursor = Connection().try_to_connect()
 
 router = APIRouter(prefix="/user-sessions",
                    tags=["user-sessions"],
                    responses={404: {"description": "User session router not found"}})
-
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
@@ -25,7 +29,9 @@ def add_session(user_session_body: UserSessionSummary):
                        (user_session_body.dataset_path, user_session_body.data_markup_path,
                         user_session_body.user_id))
         connection.commit()
-    except mariadb.Error:
+        logging.info(f"User session with body = {str(user_session_body)} has been created successfully")
+    except mariadb.Error as e:
+        logging.error(f"Could not create user session with body: {str(user_session_body)}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content=f"Could not create user session with body: {str(user_session_body)}")
 
@@ -34,9 +40,11 @@ def add_session(user_session_body: UserSessionSummary):
 def delete_session(session_id: int):
     try:
         cursor.execute("delete from user_session where id = ?", (session_id,))
-    except mariadb.Error:
+        logging.info(f"User session with id = {str(session_id)} has been deleted successfully")
+    except mariadb.Error as e:
+        logging.error(f"Could not delete user session with id = {str(session_id)}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
-                            content=f"Could not delete user_session with id = {str(session_id)}")
+                            content=f"Could not delete user session with id = {str(session_id)}")
 
 
 @router.get("/", status_code=status.HTTP_200_OK)
@@ -51,7 +59,8 @@ def get_sessions():
                     UserSession(id=row[0], dataset_path=row[1], data_markup_path=row[2], user_id=row[3]))
         return JSONResponse(status_code=status.HTTP_200_OK,
                             content=jsonable_encoder(sessions))
-    except mariadb.Error:
+    except mariadb.Error as e:
+        logging.error(f"Could not get sessions. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content="Could not get sessions")
 
@@ -62,13 +71,15 @@ def get_session(session_id: int):
         cursor.execute("select * from user_session where id = ?", (session_id,))
         session_raw = cursor.fetchall()
         if len(session_raw) == 0:
+            logging.warning(f"User session with id = {session_id} not found")
             return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
-                                content=f"Session with id = {session_id} not found")
-        optimizer = UserSession(id=session_raw[0][0], dataset_path=session_raw[0][1],
-                                data_markup_path=session_raw[0][2], user_id=session_raw[0][3])
+                                content=f"User session with id = {session_id} not found")
+        user_session = UserSession(id=session_raw[0][0], dataset_path=session_raw[0][1],
+                                   data_markup_path=session_raw[0][2], user_id=session_raw[0][3])
         return JSONResponse(status_code=status.HTTP_200_OK,
-                            content=jsonable_encoder(optimizer))
-    except mariadb.Error:
+                            content=jsonable_encoder(user_session))
+    except mariadb.Error as e:
+        logging.error(f"Could not get session with id = {session_id}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content=f"Could not get session with id = {session_id}")
 
@@ -86,7 +97,9 @@ def update_session(session_id: int, session: UserSessionSummary):
             try:
                 cursor.execute(statement, inserts)
                 connection.commit()
-            except mariadb.Error:
+                logging.info(f"User session with id = {session_id} has been updated successfully")
+            except mariadb.Error as e:
+                logging.error(f"Could not update session with body: {str(session)}. Error: {e}")
                 return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                                     content=f"Could not update session with body: {str(session)}")
     else:

@@ -8,6 +8,11 @@ from fastapi.encoders import jsonable_encoder
 import mariadb
 from .models import User, json_to_schema
 from .utils import compare_items, make_update_statement
+import logging
+
+logging.basicConfig(level=logging.INFO,
+                    format="%(levelname)s:  %(asctime)s  %(message)s",
+                    datefmt="%Y-%m-%d %H:%M:%S")
 
 connection, cursor = Connection().try_to_connect()
 
@@ -21,7 +26,9 @@ def add_user(user_body: User):
     try:
         cursor.execute("insert into users(id) values (?)", (user_body.id,))
         connection.commit()
-    except mariadb.Error:
+        logging.info(f"User with body = {str(user_body)} has been created successfully")
+    except mariadb.Error as e:
+        logging.error(f"Could not create user with body: {str(user_body)}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content=f"Could not create user with body: {str(user_body)}")
 
@@ -30,7 +37,9 @@ def add_user(user_body: User):
 def delete_user(user_id: int):
     try:
         cursor.execute("delete from users where id = ?", (user_id,))
-    except mariadb.Error:
+        logging.info(f"User with id = {str(user_id)} has been deleted successfully")
+    except mariadb.Error as e:
+        logging.error(f"Could not delete user with id = {str(user_id)}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content=f"Could not delete user with id = {str(user_id)}")
 
@@ -46,7 +55,8 @@ def get_users():
                 users.append(User(id=row[0]))
         return JSONResponse(status_code=status.HTTP_200_OK,
                             content=jsonable_encoder(users))
-    except mariadb.Error:
+    except mariadb.Error as e:
+        logging.error(f"Could not get users. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content="Could not get users")
 
@@ -57,12 +67,14 @@ def get_user(user_id: int):
         cursor.execute("select * from users where id = ?", (user_id,))
         user_raw = cursor.fetchall()
         if len(user_raw) == 0:
+            logging.warning(f"User with id = {user_id} not found")
             return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
                                 content=f"User with id = {user_id} not found")
         user = User(id=user_raw[0][0], )
         return JSONResponse(status_code=status.HTTP_200_OK,
                             content=jsonable_encoder(user))
-    except mariadb.Error:
+    except mariadb.Error as e:
+        logging.error(f"Could not get user with id = {user_id}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content=f"Could not get user with id = {user_id}")
 
@@ -79,7 +91,9 @@ def update_user(user_id: int, user: User):
             try:
                 cursor.execute(statement, inserts)
                 connection.commit()
-            except mariadb.Error:
+                logging.info(f"User with id = {user_id} has been updated successfully")
+            except mariadb.Error as e:
+                logging.error(f"Could not update user with body: {str(user)}. Error: {e}")
                 return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                                     content=f"Could not update user with body: {str(user)}")
     else:
