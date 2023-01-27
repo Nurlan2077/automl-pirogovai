@@ -23,4 +23,4 @@ app.include_router(ModelMetricsRouter.router)
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World"}
+    logging.info("Root application started successfully")
