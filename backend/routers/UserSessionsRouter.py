@@ -97,6 +97,7 @@ def update_session(session_id: int, session: UserSessionSummary):
             try:
                 cursor.execute(statement, inserts)
                 connection.commit()
+                logging.info(f"User session with id = {session_id} has been updated successfully")
             except mariadb.Error as e:
                 logging.error(f"Could not update session with body: {str(session)}. Error: {e}")
                 return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,

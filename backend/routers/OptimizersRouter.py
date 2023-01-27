@@ -91,6 +91,7 @@ def update_optimizer(optimizer_id: int, optimizer: OptimizerSummary):
             try:
                 cursor.execute(statement, inserts)
                 connection.commit()
+                logging.info(f"Optimizer with id = {optimizer_id} has been updated successfully")
             except mariadb.Error as e:
                 logging.error(f"Could not update optimizer with body: {str(optimizer)}. Error: {e}")
                 return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,

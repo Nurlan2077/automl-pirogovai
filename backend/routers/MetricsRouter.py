@@ -49,7 +49,7 @@ def delete_metric(metric_id: int):
 @router.put("/{metric_id}", status_code=status.HTTP_200_OK)
 def update_metric(metric_id: int, metric_body: MetricSummary):
     get_response = get_metric(metric_id)
-    if get_response.status_code == 200:
+    if get_response.status_code == status.HTTP_200_OK:
         old_metric = json_to_schema(get_response.body, Metric)
         metric = Metric(id=metric_id, name=metric_body.name)
         updates = compare_items(old_metric, metric)
@@ -58,6 +58,7 @@ def update_metric(metric_id: int, metric_body: MetricSummary):
             try:
                 cursor.execute(statement, inserts)
                 connection.commit()
+                logging.info(f"Metric with id = {metric_id} has been updated successfully")
             except mariadb.Error as e:
                 logging.error(f"Could not update metric with body: {str(metric_body)}. Error: {e}")
                 return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,

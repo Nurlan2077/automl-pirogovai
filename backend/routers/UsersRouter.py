@@ -91,6 +91,7 @@ def update_user(user_id: int, user: User):
             try:
                 cursor.execute(statement, inserts)
                 connection.commit()
+                logging.info(f"User with id = {user_id} has been updated successfully")
             except mariadb.Error as e:
                 logging.error(f"Could not update user with body: {str(user)}. Error: {e}")
                 return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,

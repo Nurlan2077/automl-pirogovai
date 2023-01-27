@@ -52,7 +52,7 @@ def delete_model_metric(metric_id: int, model_id: int):
 @router.put("/{metric_id}-{model_id}", status_code=status.HTTP_200_OK)
 def update_model_metric(metric_id: int, model_id: int, model_metric_body: ModelMetric):
     get_response = get_model_metric(model_id, metric_id)
-    if get_response.status_code == 200:
+    if get_response.status_code == status.HTTP_200_OK:
         old_model_metric = json_to_schema(get_response.body, ModelMetric)
         model_metric = ModelMetric(metric_id=model_metric_body.metric_id, model_id=model_metric_body.model_id,
                                    metric_value=model_metric_body.metric_value)
@@ -63,6 +63,8 @@ def update_model_metric(metric_id: int, model_id: int, model_metric_body: ModelM
             try:
                 cursor.execute(statement, inserts)
                 connection.commit()
+                logging.info(f"Model metric with model_id = {model_id} and metric_id = {metric_id} has been updated "
+                             f"successfully")
             except mariadb.Error as e:
                 logging.error(f"Could not update model metric with body: {str(model_metric_body)}. Error: {e}")
                 return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,

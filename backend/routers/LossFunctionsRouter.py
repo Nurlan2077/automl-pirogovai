@@ -92,6 +92,7 @@ def update_loss_function(loss_function_id: int, loss_function: LossFunctionSumma
             try:
                 cursor.execute(statement, inserts)
                 connection.commit()
+                logging.info(f"Loss function with id = {loss_function_id} has been updated successfully")
             except mariadb.Error as e:
                 logging.error(f"Could not update loss function with body: {str(loss_function)}. Error: {e}")
                 return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
