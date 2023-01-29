@@ -16,17 +16,7 @@ import shutil
 import os
 import patoolib
 import pathlib
-
-class UserSession(BaseModel):
-    id: int
-    dataset_path: str
-    data_markup_path: str
-    user_id: int
-
-class UserSessionSummary(BaseModel):
-    dataset_path: str
-    data_markup_path: str
-    user_id: int
+from pydantic import BaseModel
 
 ### Может быть, пригодится....
 class Category(BaseModel):
@@ -149,12 +139,11 @@ def init_router():
                 markup_path = session.data_markup_path
 
         @router.put("/{session_id}", status_code=status.HTTP_200_OK)
-        def update_session(session_id: int, session: UserSessionSummary):
+        def update_session(session_id: int, new_session: UserSessionSummary):
             get_response = get_session(session_id)
             if get_response.status_code == status.HTTP_200_OK:
                 old_session = json_to_schema(get_response.body, UserSession)
-                session = UserSession(id=session_id, dataset_path=session.dataset_path,
-                                      data_markup_path=session.data_markup_path, user_id=session.user_id)
+                session = json_to_schema(new_session.body, UserSession)
                 updates = compare_sessions(old_session, session)
                 statement, inserts = make_update_statement(session_id, updates)
                 if len(inserts) > 1:
@@ -175,6 +164,7 @@ def init_router():
                 dataset_path = session.dataset_path
                 markup_path = session.data_markup_path
 
+        """
         @router.post("/upload_dataset/{session_id}", status_code=status.HTTP_200_OK)
         def upload_dataset(session_id: int, response: Response, file: UploadFile = File(...)):
             try:
@@ -199,9 +189,9 @@ def init_router():
                     with open(f'{file.filename}', "wb") as buffer:
                         shutil.copyfileobj(file.file, buffer)
                     shutil.move(file.filename, f'D:\\dataset\\{session_id}_markup.json')
-                    session = get_session(session_id, response)
+                    session = get_session(session_id)
                     session.data_markup_path = f'D:\\dataset\\{session_id}_markup.json'
-                    update_session(session_id, session, response)
+                    update_session(session_id, session)
                 else:
                     response.body = f"Wrong file extension"
                     response.status_code = status.HTTP_400_BAD_REQUEST
@@ -220,38 +210,45 @@ def init_router():
                 except mariadb.Error as e:
                     response.status_code = status.HTTP_400_BAD_REQUEST
                     response.body = f"Could not update session with body: {str(session)}"
-
+    """
         @router.post("/upload_dataset/{session_id}", status_code=status.HTTP_200_OK)
         def upload_dataset(session_id: int, response: Response, file: UploadFile = File(...)):
             try:
-                is_exist = os.path.exists(f'D:\\dataset\\{session_id}')
-                if not is_exist:
-                    os.makedirs(f'D:\\dataset\\{session_id}')
-                with open(f'{file.filename}', "wb") as buffer:
-                    shutil.copyfileobj(file.file, buffer)
-                patoolib.extract_archive(archive=file.filename, outdir=f'D:\\dataset\\{session_id}')
-                os.remove(file.filename)
-                session = get_session(session_id, response)
-                session.dataset_path = f'D:\\dataset\\{session_id}'
-                update_session(session_id, session, response)
+                if (pathlib.Path(file.filename).suffix == '.rar') or (pathlib.Path(file.filename).suffix == '.zip'):
+                    path_to_dir = f'{os.getcwd()}\\dataset\\{session_id}'
+                    is_exist = os.path.exists(path_to_dir)
+                    if not is_exist:
+                        os.makedirs(path_to_dir)
+                    with open(f'{file.filename}', "wb") as buffer:
+                        shutil.copyfileobj(file.file, buffer)
+                    patoolib.extract_archive(archive=file.filename, outdir=path_to_dir)
+                    os.remove(file.filename)
+                    session = get_session(session_id)
+                    session.dataset_path = path_to_dir
+                    update_session(session_id, session)
+                else:
+                    response.body = f"Wrong file extension"
+                    response.status_code = status.HTTP_400_BAD_REQUEST
             except Exception as e:
                 response.body = f"Could not upload dataset"
                 response.status_code = status.HTTP_400_BAD_REQUEST
 
         @router.post("/upload_markup/{session_id}", status_code=status.HTTP_200_OK)
-        def upload_dataset(session_id: int, response: Response, file: UploadFile = File(...)):
+        def upload_markup(session_id: int, response: Response, file: UploadFile = File(...)):
             try:
                 if pathlib.Path(file.filename).suffix == '.json':
+                    path_to_markup = f'{os.getcwd()}\\dataset\\{session_id}_markup.json'
                     with open(f'{file.filename}', "wb") as buffer:
                         shutil.copyfileobj(file.file, buffer)
-                    shutil.move(file.filename, f'D:\\dataset\\{session_id}_markup.json')
-                    session = get_session(session_id, response)
-                    session.data_markup_path = f'D:\\dataset\\{session_id}_markup.json'
-                    update_session(session_id, session, response)
+                    shutil.move(file.filename, path_to_markup)
+                    session = get_session(session_id)
+                    session.data_markup_path = path_to_markup
+                    update_session(session_id, session)
                 else:
                     response.body = f"Wrong file extension"
                     response.status_code = status.HTTP_400_BAD_REQUEST
             except Exception as e:
                 response.body = f"Could not upload markup file"
                 response.status_code = status.HTTP_400_BAD_REQUEST
+
 init_router()
