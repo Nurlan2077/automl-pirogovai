@@ -164,53 +164,6 @@ def init_router():
                 dataset_path = session.dataset_path
                 markup_path = session.data_markup_path
 
-        """
-        @router.post("/upload_dataset/{session_id}", status_code=status.HTTP_200_OK)
-        def upload_dataset(session_id: int, response: Response, file: UploadFile = File(...)):
-            try:
-                is_exist = os.path.exists(f'D:\\dataset\\{session_id}')
-                if not is_exist:
-                    os.makedirs(f'D:\\dataset\\{session_id}')
-                with open(f'{file.filename}', "wb") as buffer:
-                    shutil.copyfileobj(file.file, buffer)
-                patoolib.extract_archive(archive=file.filename, outdir=f'D:\\dataset\\{session_id}')
-                os.remove(file.filename)
-                session = get_session(session_id, response)
-                session.dataset_path = f'D:\\dataset\\{session_id}'
-                update_session(session_id, session, response)
-            except Exception as e:
-                response.body = f"Could not upload dataset"
-                response.status_code = status.HTTP_400_BAD_REQUEST
-
-        @router.post("/upload_markup/{session_id}", status_code=status.HTTP_200_OK)
-        def upload_dataset(session_id: int, response: Response, file: UploadFile = File(...)):
-            try:
-                if pathlib.Path(file.filename).suffix == '.json':
-                    with open(f'{file.filename}', "wb") as buffer:
-                        shutil.copyfileobj(file.file, buffer)
-                    shutil.move(file.filename, f'D:\\dataset\\{session_id}_markup.json')
-                    session = get_session(session_id)
-                    session.data_markup_path = f'D:\\dataset\\{session_id}_markup.json'
-                    update_session(session_id, session)
-                else:
-                    response.body = f"Wrong file extension"
-                    response.status_code = status.HTTP_400_BAD_REQUEST
-            except Exception as e:
-                response.body = f"Could not upload markup file"
-                response.status_code = status.HTTP_400_BAD_REQUEST
-        def update_session(session_id: int, session: UserSessionSummary, response: Response):
-            old_session = get_session(session_id, response)
-            session = UserSession(id=session_id, dataset_path=session.dataset_path,data_markup_path=session.data_markup_path,user_id=session.user_id)
-            updates = compare_sessions(old_session, session)
-            statement, inserts = make_update_statement(session_id, updates)
-            if len(inserts) > 1:
-                try:
-                    cursor.execute(statement, inserts)
-                    connection.commit()
-                except mariadb.Error as e:
-                    response.status_code = status.HTTP_400_BAD_REQUEST
-                    response.body = f"Could not update session with body: {str(session)}"
-    """
         @router.post("/upload_dataset/{session_id}", status_code=status.HTTP_200_OK)
         def upload_dataset(session_id: int, response: Response, file: UploadFile = File(...)):
             try:
