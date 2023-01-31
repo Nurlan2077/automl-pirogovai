@@ -10,7 +10,7 @@ services:
     networks:
       - pirogov-network
     volumes:
-      - ./env/dumps/${MOST_RECENT}.sql:/docker-entrypoint-initdb.d/latest.sql
+      - ./backend/env/dumps/${MOST_RECENT}.sql:/docker-entrypoint-initdb.d/latest.sql
     environment:
       - MARIADB_ALLOW_EMPTY_ROOT_PASSWORD="yes"
       - MOST_RECENT
@@ -28,6 +28,19 @@ services:
       - "8000:8000"
     networks:
      - pirogov-network
+
+  pirogov-nginx:
+    image: nginx:latest
+    container_name: pirogov-nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend/html:/srv/html
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - pirogov-network
 
 networks:
   pirogov-network:
