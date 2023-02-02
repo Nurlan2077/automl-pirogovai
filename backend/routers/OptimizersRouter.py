@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 
 from .connection import Connection
 from .models import Optimizer, OptimizerSummary, json_to_schema
-from .utils import compare_items, make_update_statement
+from .utils import compare_items, make_update_statement, get_created_id
 import logging
 
 logging.basicConfig(level=logging.INFO,
@@ -26,7 +26,9 @@ def add_optimizer(optimizer_body: OptimizerSummary):
     try:
         cursor.execute("insert into optimizer(name) values (?)", (optimizer_body.name,))
         connection.commit()
+        entity_id = get_created_id(cursor, "optimizer")[0][0]
         logging.info(f"Optimizer with body = {str(optimizer_body)} has been created successfully")
+        return {"id": entity_id}
     except mariadb.Error as e:
         logging.error(f"Could not create optimizer with body: {str(optimizer_body)}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,

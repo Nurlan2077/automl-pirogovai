@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 
 from .connection import Connection
 from .models import FeatureCnn, FeatureCnnSummary, json_to_schema
-from .utils import compare_items, make_update_statement
+from .utils import compare_items, make_update_statement, get_created_id
 import logging
 
 logging.basicConfig(level=logging.INFO,
@@ -26,7 +26,9 @@ def add_feature_cnn(feature_cnn_body: FeatureCnnSummary):
     try:
         cursor.execute("insert into features_cnn(name) values (?)", (feature_cnn_body.name,))
         connection.commit()
+        entity_id = get_created_id(cursor, "features_cnn")[0][0]
         logging.info(f"Feature cnn with body = {str(feature_cnn_body)} has been created successfully")
+        return {"id": entity_id}
     except mariadb.Error as e:
         logging.error(f"Could not create feature cnn with body: {str(feature_cnn_body)}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,

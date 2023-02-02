@@ -30,6 +30,8 @@ def add_model_metric(model_metric_body: ModelMetric):
             (model_metric_body.model_id, model_metric_body.metric_id, model_metric_body.metric_value))
         connection.commit()
         logging.info(f"Model metric with body = {str(model_metric_body)} has been created successfully")
+        return {"model_id": model_metric_body.model_id, "metric_id": model_metric_body.metric_id}
+
     except mariadb.Error as e:
         logging.error(f"Could not create model metric with body: {str(model_metric_body)}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,

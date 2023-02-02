@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 import mariadb
 from .models import User, json_to_schema
-from .utils import compare_items, make_update_statement
+from .utils import compare_items, make_update_statement, get_created_id
 import logging
 
 logging.basicConfig(level=logging.INFO,
@@ -26,7 +26,9 @@ def add_user(user_body: User):
     try:
         cursor.execute("insert into users(id) values (?)", (user_body.id,))
         connection.commit()
+        entity_id = get_created_id(cursor, "users")[0][0]
         logging.info(f"User with body = {str(user_body)} has been created successfully")
+        return {"id": entity_id}
     except mariadb.Error as e:
         logging.error(f"Could not create user with body: {str(user_body)}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
