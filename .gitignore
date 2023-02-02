@@ -1,0 +1,7 @@
+**/*.ipynb
+**/__pycache__
+**/.ipynb_checkpoints
+.env
+**/.idea
+/.idea
+.vscode/launch.json
