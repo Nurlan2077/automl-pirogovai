@@ -1,3 +1,6 @@
+import mariadb
+
+
 def compare_items(old_item, new_item):
     updates = []
     for old_pair, new_pair in zip(old_item, new_item):
@@ -30,3 +33,8 @@ def make_update_statement(item_ids: list, table_name: str, id_names: list, updat
     where_condition = make_where_id_condition(id_names)
     statement += ", ".join(item_row) + where_condition
     return statement, (*inserts,)
+
+
+def get_created_id(cursor: mariadb.cursors.Cursor, table_name: str):
+    cursor.execute(f"select last_insert_id() from {table_name}")
+    return cursor.fetchall()

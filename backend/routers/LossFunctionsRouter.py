@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 
 from .connection import Connection
 from .models import LossFunction, LossFunctionSummary, json_to_schema
-from .utils import compare_items, make_update_statement
+from .utils import compare_items, make_update_statement, get_created_id
 import logging
 
 logging.basicConfig(level=logging.INFO,
@@ -27,7 +27,9 @@ def add_loss_function(loss_function_body: LossFunctionSummary):
     try:
         cursor.execute("insert into loss_function(name) values (?)", (loss_function_body.name,))
         connection.commit()
+        entity_id = get_created_id(cursor, "loss_function")[0][0]
         logging.info(f"Loss function with body = {str(loss_function_body)} has been created successfully")
+        return {"id": entity_id}
     except mariadb.Error as e:
         logging.error(f"Could not create loss function with body: {str(loss_function_body)}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,

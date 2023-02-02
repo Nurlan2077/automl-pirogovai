@@ -10,6 +10,8 @@ from .connection import Connection
 from .models import Model, ModelSummary
 import logging
 
+from .utils import get_created_id
+
 logging.basicConfig(level=logging.INFO,
                     format="%(levelname)s:  %(asctime)s  %(message)s",
                     datefmt="%Y-%m-%d %H:%M:%S")
@@ -21,19 +23,22 @@ router = APIRouter(prefix="/models",
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def add_model(_model_body: ModelSummary):
+def add_model(model_body: ModelSummary):
     try:
         cursor.execute(
             "insert into model(session_id, name, features_cnn_id, optimizer_id, loss_function_id, "
             "augmentation, learning_speed, epoch_count) values (?, ?, ?, ?, ?, ?, ?, ?)",
-            (_model_body.session_id, _model_body.name, _model_body.features_cnn_id,
-             _model_body.optimizer_id, _model_body.loss_function_id, _model_body.augmentation,
-             _model_body.learning_speed, _model_body.epoch_count))
+            (model_body.session_id, model_body.name, model_body.features_cnn_id,
+             model_body.optimizer_id, model_body.loss_function_id, model_body.augmentation,
+             model_body.learning_speed, model_body.epoch_count))
         connection.commit()
+        entity_id = get_created_id(cursor, "model")[0][0]
+        logging.info(f"Model with body = {str(model_body)} has been created successfully")
+        return {"id": entity_id}
     except mariadb.Error as e:
-        logging.error(f"Could not create model with body: {str(_model_body)}. Error: {e}")
+        logging.error(f"Could not create model with body: {str(model_body)}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
-                            content=f"Could not create model with body: {str(_model_body)}")
+                            content=f"Could not create model with body: {str(model_body)}")
 
 
 @router.get("/", status_code=status.HTTP_200_OK)

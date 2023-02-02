@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 
 from .connection import Connection
 from .models import UserSession, UserSessionSummary, json_to_schema
-from .utils import make_update_statement, compare_items
+from .utils import make_update_statement, compare_items, get_created_id
 import logging
 
 logging.basicConfig(level=logging.INFO,
@@ -29,7 +29,9 @@ def add_session(user_session_body: UserSessionSummary):
                        (user_session_body.dataset_path, user_session_body.data_markup_path,
                         user_session_body.user_id))
         connection.commit()
+        entity_id = get_created_id(cursor, "user_session")[0][0]
         logging.info(f"User session with body = {str(user_session_body)} has been created successfully")
+        return {"id": entity_id}
     except mariadb.Error as e:
         logging.error(f"Could not create user session with body: {str(user_session_body)}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
