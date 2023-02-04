@@ -63,7 +63,8 @@ services:
   pirogov-frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+    depends_on:
+      - pirogov-backend
     image: pirogov-frontend
     container_name: pirogov-frontend
     hostname: "pirogov-frontend.net"
