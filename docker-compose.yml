@@ -18,10 +18,10 @@ services:
   pirogov-backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
     depends_on:
       - db
     image: pirogov-backend
+    hostname: "pirogov-backend.net"
     container_name: pirogov-backend
     restart: always
     ports:
@@ -32,7 +32,8 @@ services:
   pirogov-frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+    depends_on:
+      - pirogov-backend
     image: pirogov-frontend
     container_name: pirogov-frontend
     hostname: "pirogov-frontend.net"
@@ -46,6 +47,9 @@ services:
     image: nginx:latest
     container_name: pirogov-nginx
     restart: always
+    depends_on:
+      - pirogov-frontend
+      - pirogov-backend
     ports:
       - "80:80"
     volumes:
