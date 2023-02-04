@@ -5,5 +5,7 @@ OPTIMIZERS = [
     optimizers.Adam(),
     optimizers.Nadam(),
     optimizers.Adamax(),
-    optimizers.Adadelta()
+    optimizers.Adadelta(),
+    optimizers.RMSprop()
 ]
+
