@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <link rel="stylesheet" href="html/resources/css/data-upload.css">
+    <title>Загрузка данных</title>
+    <meta charset="UTF-8">
+</head>
+
+<body id="body">
+    <div id="drop-area-rar" class="drop-area">
+        <form class="my-form">
+            <p>Выберите архив с данными для обучения</p>
+            <input type="file" id="fileElemRAR" class="fileElem" onchange="handleRAR(this.files); return false;" accept=".rar">
+            <label class="button" for="fileElemRAR">Выбрать архив</label>
+        </form>
+        <label class="fileName" id="fileNameRAR"></label>
+        <progress id="progress-bar-rar" class="progress-bar" max=100 value=0></progress>
+        <label class="fileName" id="successRAR"></label>
+    </div>
+    <div id="drop-area-json" class="drop-area">
+        <form class="my-form">
+            <p>Выберите json с разметкой</p>
+            <input type="file" id="fileElemJSON" class="fileElem" onchange="handleJSON(this.files); return false;"
+                accept=".PirogovJSON">
+            <label class="button" for="fileElemJSON">Выбрать json</label>
+        </form>
+        <label class="fileName" id="fileNameJSON"></label>
+        <progress id="progress-bar-json" class="progress-bar" max="100" value="0"></progress>
+        <label class="fileName" id="successJSON"></label>
+    </div>
+    <button type="submit" id="submit" onclick="submit(); return false;">Загрузить</button>
+    <script src="html/resources/js/data-upload.js"></script>
+</body>
+
+</html>
