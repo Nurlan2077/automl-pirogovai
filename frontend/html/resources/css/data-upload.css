@@ -1,0 +1,67 @@
+body {
+  text-align: center;
+  position:relative;
+  font-family: sans-serif;
+}
+
+a {
+  color: #369;
+}
+
+.drop-area {
+  border: 2px dashed #ccc;
+  border-radius: 20px;
+  width: 480px;
+  margin: 50px auto;
+  padding: 20px;
+  display: inline-block;
+}
+
+.drop-area.highlight {
+  border-color: rgb(0, 221, 250);
+}
+
+p {
+  margin-top: 0;
+}
+
+.fileName {
+  display: inline-block;
+}
+
+.my-form {
+  margin-bottom: 10px;
+}
+
+.button {
+  padding: 10px;
+  background: #ccc;
+  cursor: pointer;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+.button:hover {
+  background: #ddd;
+}
+
+#submit {
+  display: block;
+  margin: 50px auto;
+  text-align: center;
+  height: 40;
+  width: 500px;
+  padding: 10px;
+  background: #ccc;
+  cursor: pointer;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+#submit:hover {
+  background: #ddd;
+}
+
+.fileElem {
+  display: none;
+}

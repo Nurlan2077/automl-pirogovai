@@ -5,8 +5,7 @@ import pathlib
 import shutil
 
 import mariadb
-import patoolib
-from fastapi import APIRouter, status, UploadFile, File
+from fastapi import APIRouter, status, UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
@@ -14,6 +13,7 @@ from .connection import Connection
 from .models import UserSession, UserSessionSummary, json_to_schema, HyperParams
 from .utils import make_update_statement, compare_items, get_created_id
 import logging
+import rarfile
 
 logging.basicConfig(level=logging.INFO,
                     format="%(levelname)s:  %(asctime)s  %(message)s",
@@ -133,16 +133,17 @@ def launch_learning(session_id: int, hyperparams: HyperParams):
 
 
 @router.post("/{session_id:int}/upload_dataset", status_code=status.HTTP_200_OK)
-def upload_dataset(session_id: int, file: UploadFile = File(...)):
+def upload_dataset(session_id: int, file: UploadFile):
     try:
-        if (pathlib.Path(file.filename).suffix == '.rar') or (pathlib.Path(file.filename).suffix == '.zip'):
-            path_to_dir = f'{os.getcwd()}./dataset./{session_id}'
+        if pathlib.Path(file.filename).suffix.lower() == '.rar':
+            path_to_dir = f'{os.getcwd()}/dataset/{session_id}'
             is_exist = os.path.exists(path_to_dir)
             if not is_exist:
                 os.makedirs(path_to_dir)
             with open(f'{file.filename}', "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
-            patoolib.extract_archive(archive=file.filename, outdir=path_to_dir)
+            rf = rarfile.RarFile(file.file)
+            rf.extractall(path_to_dir)
             os.remove(file.filename)
             get_response = get_session(session_id)
             if get_response.status_code == status.HTTP_200_OK:
@@ -164,10 +165,10 @@ def upload_dataset(session_id: int, file: UploadFile = File(...)):
 
 
 @router.post("/{session_id:int}/upload_markup", status_code=status.HTTP_200_OK)
-def upload_markup(session_id: int, file: UploadFile = File(...)):
+def upload_markup(session_id: int, file: UploadFile):
     try:
-        if pathlib.Path(file.filename).suffix == '.PirogovJSON':
-            path_to_markup = f'{os.getcwd()}./markup./{session_id}_markup.json'
+        if pathlib.Path(file.filename).suffix.lower() == '.pirogovjson':
+            path_to_markup = f'{os.getcwd()}/markup/{session_id}_markup.json'
             with open(f'{file.filename}', "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
             shutil.move(file.filename, path_to_markup)
