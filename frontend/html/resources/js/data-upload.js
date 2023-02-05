@@ -64,6 +64,8 @@ let uploadProgressRAR = []
 let uploadProgressJSON = []
 let progressBarRAR = document.getElementById('progress-bar-rar')
 let progressBarJSON = document.getElementById('progress-bar-json')
+let rarSucceed = false
+let jsonSucceed = false
 
 function handleRAR(files) {
     let extension = files[0].name.split('.').pop()
@@ -115,6 +117,8 @@ function updateProgress(fileNumber, percent, uploadProgress, progressBar) {
 }
 
 function submit() {
+    jsonSucceed = false
+    rarSucceed = false
     fileRAR = [...fileRAR]
     progressBarRAR = document.getElementById('progress-bar-rar')
     let temp = initializeProgress(fileRAR.length, uploadProgressRAR, progressBarRAR)
@@ -131,11 +135,12 @@ function submit() {
 }
 
 function uploadFile(file, i, path, uploadProgress, progressBar, type) {
-    const id = 1;
+    const id = sessionStorage.getItem('sessionId');
     const url = `http://pirogov-backend.net:8000/user-sessions/${id}/${path}`;
     const xhr = new XMLHttpRequest();
     const formData = new FormData();
     formData.append('file', file)
+
     xhr.open('POST', url, true)
 
     // Update progress (can be used to show progress indicator)
@@ -147,6 +152,11 @@ function uploadFile(file, i, path, uploadProgress, progressBar, type) {
         if (xhr.readyState === 4 && xhr.status === 200) {
             updateProgress(i, 100, uploadProgress, progressBar)
             document.getElementById(type).innerHTML = "Успешно загружено!";
+            if (path === 'upload_dataset') rarSucceed = true
+            else if (path === 'upload_markup') jsonSucceed = true
+            if (rarSucceed && jsonSucceed) {
+                window.location.replace("http://0.0.0.0:3000/hyperparameters")
+            }
         } else if (xhr.readyState === 4 && xhr.status !== 200) {
             alert("Ошибка загрузки на сервер! Перезагрузите страницу!")
         }

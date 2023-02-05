@@ -1,5 +1,5 @@
 function submitData() {
-    const id = 1;
+    const id = sessionStorage.getItem('sessionId');
     let formData = new FormData(document.getElementById('hyperparametersForm'));
     let json_items = []
     for (const pair of formData.entries()) {
