@@ -152,7 +152,5 @@ function uploadFile(file, i, path, uploadProgress, progressBar, type) {
         }
     })
 
-    formData.append('file', file)
-    console.log(formData.entries())
     xhr.send(formData)
 }
