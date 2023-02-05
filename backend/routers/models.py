@@ -1,4 +1,5 @@
 import json
+from typing import List
 
 from pydantic import BaseModel, parse_obj_as
 
@@ -34,6 +35,15 @@ class ModelMetric(BaseModel):
     model_id: int
     metric_id: int
     metric_value: float
+
+
+class HyperParam(BaseModel):
+    name: str
+    value: str
+
+
+class HyperParams(BaseModel):
+    params: List[HyperParam]
 
 
 class ModelSummary(BaseModel):
