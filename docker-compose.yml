@@ -26,6 +26,9 @@ services:
     restart: always
     ports:
       - "8000:8000"
+    volumes:
+      - dataset:/app/dataset
+      - markup:/app/markup
     networks:
      - pirogov-network
 
@@ -61,3 +64,7 @@ services:
 
 networks:
   pirogov-network:
+
+volumes:
+  dataset:
+  markup:
