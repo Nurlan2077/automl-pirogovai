@@ -131,7 +131,7 @@ function submit() {
 }
 
 function uploadFile(file, i, path, uploadProgress, progressBar, type) {
-    const id = 1;
+    const id = sessionStorage.getItem('sessionId');
     const url = `http://pirogov-backend.net:8000/user-sessions/${id}/${path}`;
     const xhr = new XMLHttpRequest();
     const formData = new FormData();
