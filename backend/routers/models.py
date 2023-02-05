@@ -93,6 +93,8 @@ class UserSessionSummary(BaseModel):
 
 class User(BaseModel):
     id: int
+    name: str
+    email: str
 
 
 def json_to_schema(json_bytes, schema_type: BaseModel.__class__):
