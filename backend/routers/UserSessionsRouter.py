@@ -166,7 +166,7 @@ def upload_dataset(session_id: int, file: UploadFile = File(...)):
 @router.post("/{session_id:int}/upload_markup", status_code=status.HTTP_200_OK)
 def upload_markup(session_id: int, file: UploadFile = File(...)):
     try:
-        if pathlib.Path(file.filename).suffix == '.json':
+        if pathlib.Path(file.filename).suffix == '.PirogovJSON':
             path_to_markup = f'{os.getcwd()}./markup./{session_id}_markup.json'
             with open(f'{file.filename}', "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)

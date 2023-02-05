@@ -1,5 +1,5 @@
 function submitData() {
-    var id = 1
+    const id = 1;
     let formData = new FormData(document.getElementById('hyperparametersForm'));
     let json_items = []
     for (const pair of formData.entries()) {
@@ -11,16 +11,12 @@ function submitData() {
         }
         json_items.push(json_pair)
     }
-    const xmlHttp = new XMLHttpRequest();
-    xmlHttp.open("POST", `http://pirogov-backend.net:8000/user-sessions/${id}/learn`, true);
-
-    xmlHttp.onreadystatechange = function () {
-        alert(xmlHttp.readyState)
-        if (xmlHttp.readyState === 4) {
-            alert("Гиперпараметры были отправлены!");
+    const fetchOptions = {
+        method: 'POST', body: JSON.stringify({"params": json_items}), headers: {
+            'Content-Type': 'application/json '
         }
-    }
-    alert(JSON.stringify({"params": json_items}))
-    xmlHttp.setRequestHeader("Content-Type", "application/json");
-    xmlHttp.send(JSON.stringify({"params": json_items}))
+    };
+
+    fetch(`http://pirogov-backend.net:8000/user-sessions/${id}/learn`, fetchOptions)
+        .then(response => alert("Гиперпараметры были отправлены!"));
 }
