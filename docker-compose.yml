@@ -38,34 +38,6 @@ services:
             - driver: nvidia
               capabilities: [ gpu ]
 
-  pirogov-frontend:
-    build:
-      context: ./frontend
-    depends_on:
-      - pirogov-backend
-    image: pirogov-frontend
-    container_name: pirogov-frontend
-    hostname: "pirogov-frontend.net"
-    restart: always
-    ports:
-      - "3000:3000"
-    networks:
-     - pirogov-network
-
-  pirogov-frontend:
-    build:
-      context: ./frontend
-    depends_on:
-      - pirogov-backend
-    image: pirogov-frontend
-    container_name: pirogov-frontend
-    hostname: "pirogov-frontend.net"
-    restart: always
-    ports:
-      - "3000:3000"
-    networks:
-     - pirogov-network
-
   pirogov-nginx:
     image: nginx:latest
     container_name: pirogov-nginx
