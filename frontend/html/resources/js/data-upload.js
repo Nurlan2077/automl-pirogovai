@@ -117,6 +117,8 @@ function updateProgress(fileNumber, percent, uploadProgress, progressBar) {
 }
 
 function submit() {
+    jsonSucceed = false
+    rarSucceed = false
     fileRAR = [...fileRAR]
     progressBarRAR = document.getElementById('progress-bar-rar')
     let temp = initializeProgress(fileRAR.length, uploadProgressRAR, progressBarRAR)
@@ -157,8 +159,6 @@ function uploadFile(file, i, path, uploadProgress, progressBar, type) {
             }
         } else if (xhr.readyState === 4 && xhr.status !== 200) {
             alert("Ошибка загрузки на сервер! Перезагрузите страницу!")
-            if (path === 'upload_dataset') rarSucceed = false
-            else if (path === 'upload_markup') jsonSucceed = false
         }
     })
 
