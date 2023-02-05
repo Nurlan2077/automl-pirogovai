@@ -159,6 +159,8 @@ function uploadFile(file, i, path, uploadProgress, progressBar, type) {
             }
         } else if (xhr.readyState === 4 && xhr.status !== 200) {
             alert("Ошибка загрузки на сервер! Перезагрузите страницу!")
+            if (path === 'upload_dataset') rarSucceed = false
+            else if (path === 'upload_markup') jsonSucceed = false
         }
     })
 
