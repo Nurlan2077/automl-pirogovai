@@ -69,7 +69,7 @@ let jsonSucceed = false
 
 function handleRAR(files) {
     let extension = files[0].name.split('.').pop()
-    if (extension === "rar") {
+    if (extension.toLowerCase() === "rar") {
         fileRAR = files
         document.getElementById("fileNameRAR").innerHTML = "Файл для загрузки: " + fileRAR[0].name
     } else alert("Неправильный формат!")
@@ -77,7 +77,7 @@ function handleRAR(files) {
 
 function handleJSON(files) {
     let extension = files[0].name.split('.').pop()
-    if (extension === "PirogovJSON") {
+    if (extension.toLowerCase() === "pirogovjson") {
         fileJSON = files
         document.getElementById("fileNameJSON").innerHTML = "Файл для загрузки: " + fileJSON[0].name
     } else alert("Неправильный формат!")

@@ -1,21 +1,25 @@
 #!/usr/bin/env python
 # coding: utf-8
 import asyncio
+import logging
 import os
 import pathlib
 import shutil
+import traceback
+import zipfile
+from io import BytesIO
 
 import mariadb
+import rarfile
 from fastapi import APIRouter, status, UploadFile, WebSocket
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+from starlette.responses import StreamingResponse
 from starlette.websockets import WebSocketDisconnect
 
 from .connection import Connection
 from .models import UserSession, UserSessionSummary, json_to_schema, HyperParams
 from .utils import make_update_statement, compare_items, get_created_id
-import logging
-import rarfile
 
 logging.basicConfig(level=logging.INFO,
                     format="%(levelname)s:  %(asctime)s  %(message)s",
@@ -114,10 +118,27 @@ def update_session(session_id: int, session: UserSessionSummary):
         return get_response
 
 
+model_path: str
+
+
+@router.get("/{session_id:int}/send-archive")
+def send_archive(session_id: int):
+    file_list = [model_path]
+    logging.info(f'{file_list}')
+    zip_io = BytesIO()
+    with zipfile.ZipFile(zip_io, mode='w', compression=zipfile.ZIP_DEFLATED) as temp_zip:
+        for file in file_list:
+            temp_zip.write(file)
+    return StreamingResponse(
+        iter([zip_io.getvalue()]),
+        media_type="application/x-zip-compressed",
+        headers={"Content-Disposition": f"attachment; filename=models-archive.zip"}
+    )
+
+
 @router.websocket("/{session_id:int}/progress")
 async def progress_socket(session_id: int, websocket: WebSocket):
     try:
-
         get_response = get_session(session_id)
         if get_response.status_code == status.HTTP_200_OK:
             session = json_to_schema(get_response.body, UserSession)
@@ -188,6 +209,7 @@ def upload_dataset(session_id: int, file: UploadFile):
                                 content="Wrong file extension")
     except Exception as e:
         logging.error(f"Could not upload dataset file. Error: {e}")
+        logging.error(f"{traceback.format_exc()}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content="Could not upload dataset file")
 

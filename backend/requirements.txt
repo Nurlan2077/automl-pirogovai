@@ -1,9 +1,10 @@
-fastapi~=0.88.0
+fastapi==0.89.1
 pydantic~=1.10.2
 mariadb~=1.1.5.post3
-uvicorn~=0.20.0
-fastapi_mail~=1.2.4
+fastapi_mail==1.2.5
 python-decouple~=3.7
 python-multipart~=0.0.5
 rarfile~=4.0
 uvicorn[standard]~=0.20.0
+h5py~=3.8.0
+numpy~=1.24.2
