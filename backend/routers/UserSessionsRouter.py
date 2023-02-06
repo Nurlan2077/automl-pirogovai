@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 # coding: utf-8
+import asyncio
 import os
 import pathlib
 import shutil
 
 import mariadb
-from fastapi import APIRouter, status, UploadFile
+from fastapi import APIRouter, status, UploadFile, WebSocket
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+from starlette.websockets import WebSocketDisconnect
 
 from .connection import Connection
 from .models import UserSession, UserSessionSummary, json_to_schema, HyperParams
@@ -112,24 +114,50 @@ def update_session(session_id: int, session: UserSessionSummary):
         return get_response
 
 
-@router.post("/{session_id:int}/learn", status_code=status.HTTP_200_OK)
-def launch_learning(session_id: int, hyperparams: HyperParams):
+@router.websocket("/{session_id:int}/progress")
+async def progress_socket(session_id: int, websocket: WebSocket):
     try:
+
         get_response = get_session(session_id)
         if get_response.status_code == status.HTTP_200_OK:
             session = json_to_schema(get_response.body, UserSession)
             dataset_path = session.dataset_path
             markup_path = session.data_markup_path
+            global hyperparams
+            try:
+                await websocket.accept()
+                for i in range(0, 101, 10):
+                    await asyncio.sleep(1)
+                    await websocket.send_text(str(i))
+                await asyncio.sleep(1)
+                await websocket.send_text("Processing completed.")
+            except WebSocketDisconnect as e:
+                logging.error(f"{e}")
+    except Exception as e:
+        logging.error(f"Could not make learning for session = {session_id}. Error: {e}")
+        await websocket.send_text("Error")
+
+
+hyperparams: HyperParams
+
+
+@router.post("/{session_id:int}/learn", status_code=status.HTTP_200_OK)
+def launch_learning(session_id: int, hyperparams_: HyperParams):
+    try:
+        get_response = get_session(session_id)
+        if get_response.status_code == status.HTTP_200_OK:
+            global hyperparams
+            hyperparams = hyperparams_
             return JSONResponse(status_code=status.HTTP_200_OK,
-                                content=f"Learning for session = {session_id} has been completed successfully")
+                                content=f"Successfully received hyperparameters for session = {session_id}")
         else:
             return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
-                                content=f"Could not start learning for session = {session_id}. "
+                                content=f"Could not receive hyperparameters for session = {session_id}. "
                                         f"Cause: {get_response.body}")
     except Exception as e:
-        logging.error(f"Could not start learning for session = {session_id}. Error: {e}")
+        logging.error(f"Could not receive hyperparameters for session = {session_id}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            content=f"Could not start learning for session = {session_id}")
+                            content=f"Could not receive hyperparameters for session = {session_id}")
 
 
 @router.post("/{session_id:int}/upload_dataset", status_code=status.HTTP_200_OK)
