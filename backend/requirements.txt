@@ -6,3 +6,4 @@ fastapi_mail~=1.2.4
 python-decouple~=3.7
 python-multipart~=0.0.5
 rarfile~=4.0
+uvicorn[standard]~=0.20.0

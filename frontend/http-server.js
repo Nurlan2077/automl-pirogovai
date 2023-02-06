@@ -9,8 +9,7 @@ const server = http.createServer((req, response) => {
     let filePath;
     if (req.url.endsWith(".css") || req.url.endsWith(".js") || req.url.endsWith(".ico")) {
         filePath = `.${req.url}`
-    }
-    else {
+    } else {
         filePath = `./html${req.url === '/' ? '/index.html' : req.url}`;
         if (!filePath.endsWith(".html"))
             filePath += ".html";
@@ -21,8 +20,14 @@ const server = http.createServer((req, response) => {
             response.writeHead(404, {'Content-Type': 'text/plain'});
             response.end('File not found');
         } else {
-            response.writeHead(200, {'Content-Type': 'text/html'});
-            response.end(data);
+            if (req.url.endsWith(".css")) {
+                response.writeHead(200, {'Content-Type': 'text/css'});
+                response.end(data);
+            }
+            else {
+                response.writeHead(200, {'Content-Type': 'text/html'});
+                response.end(data);
+            }
         }
     });
 });

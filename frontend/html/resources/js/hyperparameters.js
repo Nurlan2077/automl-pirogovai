@@ -18,5 +18,8 @@ function submitData() {
     };
 
     fetch(`http://pirogov-backend.net:8000/user-sessions/${id}/learn`, fetchOptions)
-        .then(response => alert("Гиперпараметры были отправлены!"));
+        .then(response => {
+            alert("Гиперпараметры были отправлены!")
+            window.location.replace("http://0.0.0.0:3000/progress-bar")
+        });
 }
