@@ -1,4 +1,4 @@
 pandas
 pillow
-matplotlib
 tensorflow
+scikit-learn

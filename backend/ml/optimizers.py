@@ -1,6 +1,5 @@
 from keras import optimizers
 
-
 OPTIMIZERS = [
     optimizers.Adam(),
     optimizers.Nadam(),
