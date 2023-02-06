@@ -5,6 +5,7 @@ import logging
 import os
 import pathlib
 import shutil
+import sys
 import traceback
 import zipfile
 from io import BytesIO
@@ -20,6 +21,9 @@ from starlette.websockets import WebSocketDisconnect
 from .connection import Connection
 from .models import UserSession, UserSessionSummary, json_to_schema, HyperParams
 from .utils import make_update_statement, compare_items, get_created_id
+
+sys.path.append("/app/ml")
+from learning_utils import learn_models
 
 logging.basicConfig(level=logging.INFO,
                     format="%(levelname)s:  %(asctime)s  %(message)s",
@@ -147,6 +151,9 @@ async def progress_socket(session_id: int, websocket: WebSocket):
             global hyperparams
             try:
                 await websocket.accept()
+                path_to_model, metrics = await learn_models(dataset_path)
+                logging.info(path_to_model)
+                logging.info(f"metrics: {metrics}")
                 for i in range(0, 101, 10):
                     await asyncio.sleep(1)
                     await websocket.send_text(str(i))

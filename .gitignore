@@ -5,5 +5,7 @@
 **/.idea
 /.idea
 .vscode/launch.json
-venv**/train
+**/venv
+**/train
 /frontend/node_modules/
+/backend/pass

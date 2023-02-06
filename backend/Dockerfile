@@ -4,6 +4,8 @@ RUN apt-get update && \
   apt-get install -y libmariadb3 libmariadb-dev unrar python3.10 python3-pip && \
   rm -rf /var/cache/apt
 
+RUN pip install tensorflow~=2.11.0
+
 WORKDIR app
 COPY requirements.txt .
 RUN pip install -r requirements.txt

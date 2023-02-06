@@ -15,7 +15,7 @@ DEFAULT_DROPOUT = 0.2
 DEFAULT_EPOCHS = 10
 
 
-def learn_models(dataset_path: str, markup_path: str, params: dict | None = None) -> tuple[str, dict]:
+async def learn_models(dataset_path: str, markup_path: str | None = None, params: dict | None = None) -> tuple[str, dict]:
     width, height = __get_image_size(dataset_path)
     train_ds, val_ds, class_names = __generate_train_val_ds(dataset_path, (width, height))
 
@@ -92,6 +92,7 @@ def __generate_train_val_ds(dataset_path: str, image_size: tuple[int, int], val_
 def __get_best_model_and_metrics(models, val_ds, class_names: list[str]):
     prev = 0
     best_model = None
+    report = None
     
     val_labels = np.concatenate([y for x, y in val_ds], axis=0)
 
