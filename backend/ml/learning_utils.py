@@ -1,3 +1,5 @@
+import asyncio
+import logging
 import os
 import numpy as np
 import tensorflow as tf
@@ -7,7 +9,11 @@ from keras.models import Sequential
 from sklearn.metrics import classification_report
 from loss_funcs import LOSS_FUNCS
 from optimizers import OPTIMIZERS
+from fastapi import WebSocket
 
+logging.basicConfig(level=logging.INFO,
+                    format="%(levelname)s:  %(asctime)s  %(message)s",
+                    datefmt="%Y-%m-%d %H:%M:%S")
 
 DEFAULT_IMAGE_SIZE = 256
 DEFAULT_BATCH_SIZE = 32
@@ -15,7 +21,7 @@ DEFAULT_DROPOUT = 0.2
 DEFAULT_EPOCHS = 10
 
 
-async def learn_models(dataset_path: str, markup_path: str | None = None, params: dict | None = None) -> tuple[str, dict]:
+async def learn_models(websocket: WebSocket, dataset_path: str,  markup_path: str | None = None, params: dict | None = None) -> tuple[str, dict]:
     width, height = __get_image_size(dataset_path)
     train_ds, val_ds, class_names = __generate_train_val_ds(dataset_path, (width, height))
 
@@ -45,6 +51,10 @@ async def learn_models(dataset_path: str, markup_path: str | None = None, params
     models = []
     epochs = __get_epochs_num()
 
+    total_count = len(OPTIMIZERS) * len(LOSS_FUNCS)
+    logging.info(f"Total count: {total_count}")
+    i = 0
+
     for optimizer in OPTIMIZERS:
         for loss_func in LOSS_FUNCS:
 
@@ -54,12 +64,17 @@ async def learn_models(dataset_path: str, markup_path: str | None = None, params
             model.fit(train_ds, validation_data=val_ds, epochs=epochs)
             model._name = optimizer_name + "_" + loss_func.name
             models.append(model)
+            i += 1
+            logging.info(f"{i * 100 / total_count}%")
+            await websocket.send_text(f"{i * 100 / total_count}%")
+            await asyncio.sleep(1)
             
             del model
             tf.keras.backend.clear_session()
 
     model, metrics = __get_best_model_and_metrics(models, val_ds, class_names)
     path_to_model = __save_model(model, dataset_path)
+    logging.info(keras.models.load_model('model.h5'))
     return path_to_model, metrics
 
 

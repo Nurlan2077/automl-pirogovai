@@ -151,19 +151,19 @@ async def progress_socket(session_id: int, websocket: WebSocket):
             global hyperparams
             try:
                 await websocket.accept()
-                path_to_model, metrics = await learn_models(dataset_path)
-                logging.info(path_to_model)
+                global model_path
+                model_path, metrics = await learn_models(websocket, dataset_path)
+                logging.info(f"model path: {model_path}")
                 logging.info(f"metrics: {metrics}")
-                for i in range(0, 101, 10):
-                    await asyncio.sleep(1)
-                    await websocket.send_text(str(i))
                 await asyncio.sleep(1)
                 await websocket.send_text("Processing completed.")
+                await websocket.close()
             except WebSocketDisconnect as e:
                 logging.error(f"{e}")
     except Exception as e:
         logging.error(f"Could not make learning for session = {session_id}. Error: {e}")
         await websocket.send_text("Error")
+        await websocket.close()
 
 
 hyperparams: HyperParams
@@ -189,22 +189,40 @@ def launch_learning(session_id: int, hyperparams_: HyperParams):
 
 
 @router.post("/{session_id:int}/upload_dataset", status_code=status.HTTP_200_OK)
-def upload_dataset(session_id: int, file: UploadFile):
+async def upload_dataset(session_id: int, file: UploadFile):
     try:
-        if pathlib.Path(file.filename).suffix.lower() == '.rar':
+        file_extension = pathlib.Path(file.filename).suffix.lower()
+        if file_extension == '.rar' or file_extension == '.zip':
             path_to_dir = f'{os.getcwd()}/dataset/{session_id}'
             is_exist = os.path.exists(path_to_dir)
             if not is_exist:
                 os.makedirs(path_to_dir)
             with open(f'{file.filename}', "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
-            rf = rarfile.RarFile(file.file)
-            rf.extractall(path_to_dir)
+            if file_extension == ',rar':
+                rf = rarfile.RarFile(file.file)
+                rf.extractall(path_to_dir)
+            else:
+                file_name = file.filename
+
+                # Write the contents of the UploadFile object to disk
+                with open(f"{path_to_dir}/{file_name}", 'wb') as f:
+                    while True:
+                        chunk = await file.read(512 * 1024)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                with zipfile.ZipFile(file_name, 'r') as zip_ref:
+                    zip_ref.extractall(path_to_dir)
+                base_name = os.path.basename(file_name)
+                file_name_new, file_ext = os.path.splitext(base_name)
+                os.remove(path_to_dir + "/" + file_name)
+                path_to_dir += "/" + file_name_new + "/" + file_name_new
             os.remove(file.filename)
             get_response = get_session(session_id)
             if get_response.status_code == status.HTTP_200_OK:
                 body = json_to_schema(get_response.body, UserSession)
-                update = UserSessionSummary(dataset_path=path_to_dir,
+                update = UserSessionSummary(dataset_path=path_to_dir + "/",
                                             data_markup_path=body.data_markup_path,
                                             user_id=body.user_id)
                 return update_session(session_id, update)

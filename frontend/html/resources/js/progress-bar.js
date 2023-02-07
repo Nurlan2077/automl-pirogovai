@@ -8,7 +8,7 @@ socket.onmessage = function (event) {
     } else {
         console.log(event.data);
         let bar = document.querySelector(".progress-bar");
-        bar.style.width = event.data + "%"
-        bar.innerText = event.data + "%";
+        bar.style.width = event.data;
+        bar.innerText = event.data;
     }
 }

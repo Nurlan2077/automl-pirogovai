@@ -13,7 +13,7 @@ fetch(`http://pirogov-backend.net:8000/user-sessions/${id}/send-archive`, fetchO
                         const blob = new Blob([content], {type: "application/x-hdf"});
                         const link = document.getElementById('download');
                         link.href = URL.createObjectURL(blob);
-                        link.download = "model.hdf5";
+                        link.download = "model.h5";
                     });
                 });
             })

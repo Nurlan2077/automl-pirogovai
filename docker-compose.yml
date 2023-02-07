@@ -31,6 +31,12 @@ services:
       - markup:/app/markup
     networks:
      - pirogov-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [ gpu ]
 
   pirogov-frontend:
     build:
