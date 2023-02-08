@@ -4,7 +4,7 @@ import os
 import numpy as np
 import tensorflow as tf
 from PIL import Image
-from keras import layers
+from keras import layers, models as m
 from keras.models import Sequential
 from sklearn.metrics import classification_report
 from loss_funcs import LOSS_FUNCS
@@ -74,7 +74,9 @@ async def learn_models(websocket: WebSocket, dataset_path: str,  markup_path: st
 
     model, metrics = __get_best_model_and_metrics(models, val_ds, class_names)
     path_to_model = __save_model(model, dataset_path)
-    logging.info(keras.models.load_model('model.h5'))
+    logging.info(f"model path: {path_to_model}")
+    logging.info(f"metrics: {metrics}")
+    logging.info(m.load_model(path_to_model))
     return path_to_model, metrics
 
 
