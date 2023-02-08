@@ -1,3 +1,5 @@
+import json
+
 import mariadb
 
 
@@ -38,3 +40,7 @@ def make_update_statement(item_ids: list, table_name: str, id_names: list, updat
 def get_created_id(cursor: mariadb.cursors.Cursor, table_name: str):
     cursor.execute(f"select last_insert_id() from {table_name}")
     return cursor.fetchall()
+
+
+def get_id(scheme: bytes):
+    return json.loads(scheme)['id']

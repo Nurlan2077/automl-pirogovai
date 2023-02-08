@@ -29,7 +29,8 @@ def add_loss_function(loss_function_body: LossFunctionSummary):
         connection.commit()
         entity_id = get_created_id(cursor, "loss_function")[0][0]
         logging.info(f"Loss function with body = {str(loss_function_body)} has been created successfully")
-        return {"id": entity_id}
+        return JSONResponse(status_code=status.HTTP_201_CREATED,
+                            content={"id": entity_id})
     except mariadb.Error as e:
         logging.error(f"Could not create loss function with body: {str(loss_function_body)}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
@@ -80,6 +81,24 @@ def get_loss_function(loss_function_id: int):
         logging.error(f"Could not get loss function with id = {loss_function_id}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content=f"Could not get loss function with id = {loss_function_id}")
+
+
+@router.get("/by-name/{loss_function_name}", status_code=status.HTTP_200_OK)
+def get_loss_function_by_name(loss_function_name: str):
+    try:
+        cursor.execute("select * from loss_function where name = ?", (loss_function_name,))
+        function_raw = cursor.fetchall()
+        if len(function_raw) == 0:
+            logging.warning(f"Loss function with name = {loss_function_name} not found")
+            return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
+                                content=f"Loss function with name = {loss_function_name} not found")
+        loss_function = LossFunction(id=function_raw[0][0], name=function_raw[0][1])
+        return JSONResponse(status_code=status.HTTP_200_OK,
+                            content=jsonable_encoder(loss_function))
+    except mariadb.Error as e:
+        logging.error(f"Could not get loss function with name = {loss_function_name}. Error: {e}")
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                            content=f"Could not get loss function with name = {loss_function_name}")
 
 
 @router.put("/{loss_function_id}", status_code=status.HTTP_200_OK)

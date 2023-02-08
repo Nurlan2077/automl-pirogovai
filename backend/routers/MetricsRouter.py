@@ -30,7 +30,8 @@ def add_metric(metric_body: MetricSummary):
         connection.commit()
         entity_id = get_created_id(cursor, "metric")[0][0]
         logging.info(f"Metric with body = {str(metric_body)} has been created successfully")
-        return {"id": entity_id}
+        return JSONResponse(status_code=status.HTTP_201_CREATED,
+                            content={"id": entity_id})
     except mariadb.Error as e:
         logging.error(f"Could not create metric with body: {str(metric_body)}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
@@ -84,6 +85,24 @@ def get_metrics():
         logging.error(f"Could not get metrics. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content="Could not get metrics")
+
+
+@router.get("/by-name/{metric_name}", status_code=status.HTTP_200_OK)
+def get_metric_by_name(metric_name: str):
+    try:
+        cursor.execute("select * from metric where name = ?", (metric_name,))
+        metric_raw = cursor.fetchall()
+        if len(metric_raw) == 0:
+            logging.warning(f"Metric with name = {metric_name} not found")
+            return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
+                                content=f"Metric with name = {metric_name} not found")
+        metric = Metric(id=metric_raw[0][0], name=metric_raw[0][1])
+        return JSONResponse(status_code=status.HTTP_200_OK,
+                            content=jsonable_encoder(metric))
+    except mariadb.Error as e:
+        logging.error(f"Could not get metric with name = {metric_name}. Error: {e}")
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                            content=f"Could not get metric with name = {metric_name}")
 
 
 @router.get("/{metric_id}", status_code=status.HTTP_200_OK)

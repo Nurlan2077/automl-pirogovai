@@ -28,7 +28,8 @@ def add_optimizer(optimizer_body: OptimizerSummary):
         connection.commit()
         entity_id = get_created_id(cursor, "optimizer")[0][0]
         logging.info(f"Optimizer with body = {str(optimizer_body)} has been created successfully")
-        return {"id": entity_id}
+        return JSONResponse(status_code=status.HTTP_201_CREATED,
+                            content={"id": entity_id})
     except mariadb.Error as e:
         logging.error(f"Could not create optimizer with body: {str(optimizer_body)}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
@@ -79,6 +80,24 @@ def get_optimizer(optimizer_id: int):
         logging.error(f"Could not get optimizer with id = {optimizer_id}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content=f"Could not get optimizer with id = {optimizer_id}")
+
+
+@router.get("/by_name/{optimizer_name}", status_code=status.HTTP_200_OK)
+def get_optimizer_by_name(optimizer_name: str):
+    try:
+        cursor.execute("select * from optimizer where name = ?", (optimizer_name,))
+        feature_raw = cursor.fetchall()
+        if len(feature_raw) == 0:
+            logging.warning(f"Optimizer with name = {optimizer_name} not found")
+            return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
+                                content=f"Optimizer with name = {optimizer_name} not found")
+        optimizer = Optimizer(id=feature_raw[0][0], name=feature_raw[0][1])
+        return JSONResponse(status_code=status.HTTP_200_OK,
+                            content=jsonable_encoder(optimizer))
+    except mariadb.Error as e:
+        logging.error(f"Could not get optimizer with name = {optimizer_name}. Error: {e}")
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                            content=f"Could not get optimizer with name = {optimizer_name}")
 
 
 @router.put("/{optimizer_id}", status_code=status.HTTP_200_OK)
