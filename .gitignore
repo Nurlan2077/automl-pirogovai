@@ -7,3 +7,5 @@
 .vscode/launch.json
 **/venv
 **/train
+/frontend/node_modules/
+/backend/pass

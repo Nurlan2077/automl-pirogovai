@@ -1,19 +1,29 @@
 #!/usr/bin/env python
 # coding: utf-8
+import asyncio
+import logging
 import os
 import pathlib
 import shutil
+import sys
+import traceback
+import zipfile
+from io import BytesIO
 
 import mariadb
-from fastapi import APIRouter, status, UploadFile
+import rarfile
+from fastapi import APIRouter, status, UploadFile, WebSocket
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+from starlette.responses import StreamingResponse
+from starlette.websockets import WebSocketDisconnect
 
 from .connection import Connection
 from .models import UserSession, UserSessionSummary, json_to_schema, HyperParams
 from .utils import make_update_statement, compare_items, get_created_id
-import logging
-import rarfile
+
+sys.path.append("/app/ml")
+from learning_utils import learn_models
 
 logging.basicConfig(level=logging.INFO,
                     format="%(levelname)s:  %(asctime)s  %(message)s",
@@ -112,43 +122,107 @@ def update_session(session_id: int, session: UserSessionSummary):
         return get_response
 
 
-@router.post("/{session_id:int}/learn", status_code=status.HTTP_200_OK)
-def launch_learning(session_id: int, hyperparams: HyperParams):
+model_path: str
+
+
+@router.get("/{session_id:int}/send-archive")
+def send_archive(session_id: int):
+    file_list = [model_path]
+    logging.info(f'{file_list}')
+    zip_io = BytesIO()
+    with zipfile.ZipFile(zip_io, mode='w', compression=zipfile.ZIP_DEFLATED) as temp_zip:
+        for file in file_list:
+            temp_zip.write(file)
+    return StreamingResponse(
+        iter([zip_io.getvalue()]),
+        media_type="application/x-zip-compressed",
+        headers={"Content-Disposition": f"attachment; filename=models-archive.zip"}
+    )
+
+
+@router.websocket("/{session_id:int}/progress")
+async def progress_socket(session_id: int, websocket: WebSocket):
     try:
         get_response = get_session(session_id)
         if get_response.status_code == status.HTTP_200_OK:
             session = json_to_schema(get_response.body, UserSession)
             dataset_path = session.dataset_path
             markup_path = session.data_markup_path
+            global hyperparams
+            try:
+                await websocket.accept()
+                global model_path
+                model_path, metrics = await learn_models(websocket, dataset_path)
+                logging.info(f"model path: {model_path}")
+                logging.info(f"metrics: {metrics}")
+                await asyncio.sleep(1)
+                await websocket.send_text("Processing completed.")
+                await websocket.close()
+            except WebSocketDisconnect as e:
+                logging.error(f"{e}")
+    except Exception as e:
+        logging.error(f"Could not make learning for session = {session_id}. Error: {e}")
+        await websocket.send_text("Error")
+        await websocket.close()
+
+
+hyperparams: HyperParams
+
+
+@router.post("/{session_id:int}/learn", status_code=status.HTTP_200_OK)
+def launch_learning(session_id: int, hyperparams_: HyperParams):
+    try:
+        get_response = get_session(session_id)
+        if get_response.status_code == status.HTTP_200_OK:
+            global hyperparams
+            hyperparams = hyperparams_
             return JSONResponse(status_code=status.HTTP_200_OK,
-                                content=f"Learning for session = {session_id} has been completed successfully")
+                                content=f"Successfully received hyperparameters for session = {session_id}")
         else:
             return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
-                                content=f"Could not start learning for session = {session_id}. "
+                                content=f"Could not receive hyperparameters for session = {session_id}. "
                                         f"Cause: {get_response.body}")
     except Exception as e:
-        logging.error(f"Could not start learning for session = {session_id}. Error: {e}")
+        logging.error(f"Could not receive hyperparameters for session = {session_id}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            content=f"Could not start learning for session = {session_id}")
+                            content=f"Could not receive hyperparameters for session = {session_id}")
 
 
 @router.post("/{session_id:int}/upload_dataset", status_code=status.HTTP_200_OK)
-def upload_dataset(session_id: int, file: UploadFile):
+async def upload_dataset(session_id: int, file: UploadFile):
     try:
-        if pathlib.Path(file.filename).suffix.lower() == '.rar':
+        file_extension = pathlib.Path(file.filename).suffix.lower()
+        if file_extension == '.rar' or file_extension == '.zip':
             path_to_dir = f'{os.getcwd()}/dataset/{session_id}'
             is_exist = os.path.exists(path_to_dir)
             if not is_exist:
                 os.makedirs(path_to_dir)
             with open(f'{file.filename}', "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
-            rf = rarfile.RarFile(file.file)
-            rf.extractall(path_to_dir)
+            if file_extension == ',rar':
+                rf = rarfile.RarFile(file.file)
+                rf.extractall(path_to_dir)
+            else:
+                file_name = file.filename
+
+                # Write the contents of the UploadFile object to disk
+                with open(f"{path_to_dir}/{file_name}", 'wb') as f:
+                    while True:
+                        chunk = await file.read(512 * 1024)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                with zipfile.ZipFile(file_name, 'r') as zip_ref:
+                    zip_ref.extractall(path_to_dir)
+                base_name = os.path.basename(file_name)
+                file_name_new, file_ext = os.path.splitext(base_name)
+                os.remove(path_to_dir + "/" + file_name)
+                path_to_dir += "/" + file_name_new + "/" + file_name_new
             os.remove(file.filename)
             get_response = get_session(session_id)
             if get_response.status_code == status.HTTP_200_OK:
                 body = json_to_schema(get_response.body, UserSession)
-                update = UserSessionSummary(dataset_path=path_to_dir,
+                update = UserSessionSummary(dataset_path=path_to_dir + "/",
                                             data_markup_path=body.data_markup_path,
                                             user_id=body.user_id)
                 return update_session(session_id, update)
@@ -160,6 +234,7 @@ def upload_dataset(session_id: int, file: UploadFile):
                                 content="Wrong file extension")
     except Exception as e:
         logging.error(f"Could not upload dataset file. Error: {e}")
+        logging.error(f"{traceback.format_exc()}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content="Could not upload dataset file")
 

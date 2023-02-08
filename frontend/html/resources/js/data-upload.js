@@ -58,7 +58,7 @@ function unhighlightJSON(e) {
     dropAreaJSON.classList.remove('highlight')
 }
 
-var fileRAR = null
+var fileArchive = null
 var fileJSON = null
 let uploadProgressRAR = []
 let uploadProgressJSON = []
@@ -69,15 +69,15 @@ let jsonSucceed = false
 
 function handleRAR(files) {
     let extension = files[0].name.split('.').pop()
-    if (extension === "rar") {
-        fileRAR = files
-        document.getElementById("fileNameRAR").innerHTML = "Файл для загрузки: " + fileRAR[0].name
+    if (extension.toLowerCase() === "rar" || extension.toLowerCase() === "zip" ) {
+        fileArchive = files
+        document.getElementById("fileNameRAR").innerHTML = "Файл для загрузки: " + fileArchive[0].name
     } else alert("Неправильный формат!")
 }
 
 function handleJSON(files) {
     let extension = files[0].name.split('.').pop()
-    if (extension === "PirogovJSON") {
+    if (extension.toLowerCase() === "pirogovjson") {
         fileJSON = files
         document.getElementById("fileNameJSON").innerHTML = "Файл для загрузки: " + fileJSON[0].name
     } else alert("Неправильный формат!")
@@ -87,8 +87,8 @@ function handleDropRAR(e) {
     var dt = e.dataTransfer
     let extension = dt.files[0].name.split('.').pop()
     if (extension === "rar") {
-        fileRAR = dt.files
-        document.getElementById("fileNameRAR").innerHTML = "Файл для загрузки: " + fileRAR[0].name
+        fileArchive = dt.files
+        document.getElementById("fileNameRAR").innerHTML = "Файл для загрузки: " + fileArchive[0].name
     } else alert("Неправильный формат!")
 }
 
@@ -119,12 +119,12 @@ function updateProgress(fileNumber, percent, uploadProgress, progressBar) {
 function submit() {
     jsonSucceed = false
     rarSucceed = false
-    fileRAR = [...fileRAR]
+    fileArchive = [...fileArchive]
     progressBarRAR = document.getElementById('progress-bar-rar')
-    let temp = initializeProgress(fileRAR.length, uploadProgressRAR, progressBarRAR)
+    let temp = initializeProgress(fileArchive.length, uploadProgressRAR, progressBarRAR)
     uploadProgressRAR = temp[0]
     progressBarRAR = temp[1]
-    fileRAR.forEach((item, index) => uploadFile(item, index, 'upload_dataset', uploadProgressRAR, progressBarRAR, "successRAR"))
+    fileArchive.forEach((item, index) => uploadFile(item, index, 'upload_dataset', uploadProgressRAR, progressBarRAR, "successRAR"))
 
     fileJSON = [...fileJSON]
     progressBarJSON = document.getElementById('progress-bar-json')

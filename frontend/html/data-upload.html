@@ -11,7 +11,7 @@
     <div id="drop-area-rar" class="drop-area">
         <form class="my-form">
             <p>Выберите архив с данными для обучения</p>
-            <input type="file" id="fileElemRAR" class="fileElem" onchange="handleRAR(this.files); return false;" accept=".rar">
+            <input type="file" id="fileElemRAR" class="fileElem" onchange="handleRAR(this.files); return false;" accept=".rar, .zip">
             <label class="button" for="fileElemRAR">Выбрать архив</label>
         </form>
         <label class="fileName" id="fileNameRAR"></label>
@@ -22,7 +22,7 @@
         <form class="my-form">
             <p>Выберите json с разметкой</p>
             <input type="file" id="fileElemJSON" class="fileElem" onchange="handleJSON(this.files); return false;"
-                accept=".PirogovJSON">
+                accept=".pirogovjson">
             <label class="button" for="fileElemJSON">Выбрать json</label>
         </form>
         <label class="fileName" id="fileNameJSON"></label>
