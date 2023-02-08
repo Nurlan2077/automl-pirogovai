@@ -28,7 +28,8 @@ def add_feature_cnn(feature_cnn_body: FeatureCnnSummary):
         connection.commit()
         entity_id = get_created_id(cursor, "features_cnn")[0][0]
         logging.info(f"Feature cnn with body = {str(feature_cnn_body)} has been created successfully")
-        return {"id": entity_id}
+        return JSONResponse(status_code=status.HTTP_201_CREATED,
+                            content={"id": entity_id})
     except mariadb.Error as e:
         logging.error(f"Could not create feature cnn with body: {str(feature_cnn_body)}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
@@ -77,6 +78,23 @@ def get_feature_cnn(feature_cnn_id: int):
         logging.error(f"Could not get feature cnn with id = {feature_cnn_id}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content=f"Could not get feature cnn with id = {feature_cnn_id}")
+
+
+@router.get("/by-name/{feature_cnn_name}", status_code=status.HTTP_200_OK)
+def get_feature_cnn_by_name(feature_cnn_name: str):
+    try:
+        cursor.execute("select * from features_cnn where name = ?", (feature_cnn_name,))
+        feature_raw = cursor.fetchall()
+        if len(feature_raw) == 0:
+            logging.warning(f"Feature cnn with name = {feature_cnn_name} not found")
+            return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
+                                content=f"Feature cnn with name = {feature_cnn_name} not found")
+        feature_cnn = FeatureCnn(id=feature_raw[0][0], name=feature_raw[0][1])
+        return JSONResponse(content=jsonable_encoder(feature_cnn))
+    except mariadb.Error as e:
+        logging.error(f"Could not get feature cnn with bane = {feature_cnn_name}. Error: {e}")
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                            content=f"Could not get feature cnn with name = {feature_cnn_name}")
 
 
 @router.put("/{feature_cnn_id}", status_code=status.HTTP_200_OK)

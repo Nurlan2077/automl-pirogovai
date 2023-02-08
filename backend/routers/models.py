@@ -37,6 +37,12 @@ class ModelMetric(BaseModel):
     metric_value: float
 
 
+class ModelMetricNamed(BaseModel):
+    metric_name: str
+    model_name: str
+    metric_value: float
+
+
 class HyperParam(BaseModel):
     name: str
     value: str

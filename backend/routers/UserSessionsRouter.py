@@ -18,9 +18,15 @@ from fastapi.responses import JSONResponse
 from starlette.responses import StreamingResponse
 from starlette.websockets import WebSocketDisconnect
 
+from .LossFunctionsRouter import get_loss_function_by_name
+from .MetricsRouter import get_metric_by_name
+from .ModelMetricsRouter import add_model_metric
+from .ModelsRouter import add_model
+from .OptimizersRouter import get_optimizer_by_name
 from .connection import Connection
-from .models import UserSession, UserSessionSummary, json_to_schema, HyperParams
-from .utils import make_update_statement, compare_items, get_created_id
+from .models import UserSession, UserSessionSummary, json_to_schema, HyperParams, Optimizer, LossFunction, ModelSummary, \
+    ModelMetric, Metric
+from .utils import make_update_statement, compare_items, get_created_id, get_id
 
 sys.path.append("/app/ml")
 from learning_utils import learn_models
@@ -45,7 +51,8 @@ def add_session(user_session_body: UserSessionSummary):
         connection.commit()
         entity_id = get_created_id(cursor, "user_session")[0][0]
         logging.info(f"User session with body = {str(user_session_body)} has been created successfully")
-        return {"id": entity_id}
+        return JSONResponse(status_code=status.HTTP_201_CREATED,
+                            content={"id": entity_id})
     except mariadb.Error as e:
         logging.error(f"Could not create user session with body: {str(user_session_body)}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
@@ -140,6 +147,77 @@ def send_archive(session_id: int):
     )
 
 
+def get_model_optimizer(model_name: str):
+    first_underscore = model_name.find("_")
+    optimizer_name = model_name[:first_underscore]
+    optimizer_response = get_optimizer_by_name(optimizer_name)
+    if optimizer_response.status_code == status.HTTP_200_OK:
+        optimizer_id = json_to_schema(optimizer_response.body, Optimizer).id
+    else:
+        optimizer_id = None
+    return optimizer_id
+
+
+def get_model_loss_function(model_name: str):
+    first_underscore = model_name.find("_")
+    loss_function_name = model_name[first_underscore + 1:]
+    loss_function_response = get_loss_function_by_name(loss_function_name)
+    if loss_function_response.status_code == status.HTTP_200_OK:
+        loss_function_id = json_to_schema(loss_function_response.body, LossFunction).id
+    else:
+        loss_function_id = None
+    return loss_function_id
+
+
+def save_model_to_db(model_name: str, session_id: int, epochs: int):
+    model_summary = ModelSummary(session_id=session_id,
+                                 name=model_name,
+                                 features_cnn_id=1,
+                                 optimizer_id=get_model_optimizer(model_name),
+                                 loss_function_id=get_model_loss_function(model_name),
+                                 augmentation=1,
+                                 learning_speed=1,
+                                 epoch_count=epochs)
+    model_response = add_model(model_summary)
+    if model_response.status_code == status.HTTP_201_CREATED:
+        return get_id(model_response.body)
+    else:
+        model_id = None
+    return model_id
+
+
+def get_metric_id(metric_name: str):
+    metric_response = get_metric_by_name(metric_name)
+    logging.info(f"{metric_response}")
+    logging.info(f"{metric_response.body}")
+    if metric_response.status_code == status.HTTP_200_OK:
+        metric_id = json_to_schema(metric_response.body, Metric).id
+    else:
+        metric_id = None
+    return metric_id
+
+
+def save_model_metrics_to_db(model_id: int, metrics: dict):
+    if model_id is None:
+        logging.error(f"Could not save model metrics with null model_id")
+    else:
+        for metric_name, metric_value in metrics.items():
+            metric_id = get_metric_id(metric_name)
+            if metric_id is None:
+                logging.error(f"Could not save model metric with metric name = {metric_name}")
+                continue
+            summary = ModelMetric(model_id=model_id,
+                                  metric_id=metric_id,
+                                  metric_value=metric_value)
+            add_model_metric(summary)
+
+
+def get_model_name(path_to_model: str):
+    last_slash = path_to_model.rfind("/")
+    dot = path_to_model.find(".")
+    return path_to_model[last_slash + 1:dot]
+
+
 @router.websocket("/{session_id:int}/progress")
 async def progress_socket(session_id: int, websocket: WebSocket):
     try:
@@ -152,9 +230,11 @@ async def progress_socket(session_id: int, websocket: WebSocket):
             try:
                 await websocket.accept()
                 global model_path
-                model_path, metrics = await learn_models(websocket, dataset_path)
-                logging.info(f"model path: {model_path}")
-                logging.info(f"metrics: {metrics}")
+                model_path, metrics, epochs = await learn_models(websocket, dataset_path)
+                model_id = save_model_to_db(get_model_name(model_path), session_id, epochs)
+                save_model_metrics_to_db(model_id, metrics)
+                await asyncio.sleep(1)
+                await websocket.send_text(f"model id: {model_id}")
                 await asyncio.sleep(1)
                 await websocket.send_text("Processing completed.")
                 await websocket.close()
@@ -204,7 +284,6 @@ async def upload_dataset(session_id: int, file: UploadFile):
                 rf.extractall(path_to_dir)
             else:
                 file_name = file.filename
-
                 # Write the contents of the UploadFile object to disk
                 with open(f"{path_to_dir}/{file_name}", 'wb') as f:
                     while True:
@@ -215,9 +294,7 @@ async def upload_dataset(session_id: int, file: UploadFile):
                 with zipfile.ZipFile(file_name, 'r') as zip_ref:
                     zip_ref.extractall(path_to_dir)
                 base_name = os.path.basename(file_name)
-                file_name_new, file_ext = os.path.splitext(base_name)
                 os.remove(path_to_dir + "/" + file_name)
-                path_to_dir += "/" + file_name_new + "/" + file_name_new
             os.remove(file.filename)
             get_response = get_session(session_id)
             if get_response.status_code == status.HTTP_200_OK:

@@ -4,7 +4,7 @@ import os
 import numpy as np
 import tensorflow as tf
 from PIL import Image
-from keras import layers, models as m
+from keras import layers
 from keras.models import Sequential
 from sklearn.metrics import classification_report
 from loss_funcs import LOSS_FUNCS
@@ -21,7 +21,9 @@ DEFAULT_DROPOUT = 0.2
 DEFAULT_EPOCHS = 10
 
 
-async def learn_models(websocket: WebSocket, dataset_path: str,  markup_path: str | None = None, params: dict | None = None) -> tuple[str, dict]:
+async def learn_models(websocket: WebSocket, dataset_path: str, markup_path: str | None = None,
+                       params: dict | None = None) -> tuple[str, dict, int]:
+    tf.config.optimizer.set_experimental_options({'layout_optimizer': False})
     width, height = __get_image_size(dataset_path)
     train_ds, val_ds, class_names = __generate_train_val_ds(dataset_path, (width, height))
 
@@ -35,7 +37,7 @@ async def learn_models(websocket: WebSocket, dataset_path: str,  markup_path: st
     num_classes = len(class_names)
     sequential_layers = [
         data_augmentation,
-        layers.Rescaling(1./255),
+        layers.Rescaling(1. / 255),
         layers.Conv2D(16, 3, padding='same', activation='relu'),
         layers.MaxPooling2D(),
         layers.Conv2D(32, 3, padding='same', activation='relu'),
@@ -57,7 +59,6 @@ async def learn_models(websocket: WebSocket, dataset_path: str,  markup_path: st
 
     for optimizer in OPTIMIZERS:
         for loss_func in LOSS_FUNCS:
-
             optimizer_name = str(optimizer).split(".")[-1].split(" ")[0]
             model = Sequential(sequential_layers)
             model.compile(optimizer=optimizer, loss=loss_func, metrics=['accuracy'])
@@ -68,7 +69,7 @@ async def learn_models(websocket: WebSocket, dataset_path: str,  markup_path: st
             logging.info(f"{i * 100 / total_count}%")
             await websocket.send_text(f"{i * 100 / total_count}%")
             await asyncio.sleep(1)
-            
+
             del model
             tf.keras.backend.clear_session()
 
@@ -76,13 +77,13 @@ async def learn_models(websocket: WebSocket, dataset_path: str,  markup_path: st
     path_to_model = __save_model(model, dataset_path)
     logging.info(f"model path: {path_to_model}")
     logging.info(f"metrics: {metrics}")
-    logging.info(m.load_model(path_to_model))
-    return path_to_model, metrics
+    test_metrics = {"accuracy": 0.3, "precision": 0.6, "recall": 0.2}
+    return path_to_model, test_metrics, epochs
 
 
 def __generate_train_val_ds(dataset_path: str, image_size: tuple[int, int], val_split=0.2):
     batch_size = __get_batch_size()
-    
+
     train_ds = tf.keras.utils.image_dataset_from_directory(
         dataset_path,
         validation_split=val_split,
@@ -110,18 +111,18 @@ def __get_best_model_and_metrics(models, val_ds, class_names: list[str]):
     prev = 0
     best_model = None
     report = None
-    
+
     val_labels = np.concatenate([y for x, y in val_ds], axis=0)
 
     for model in models:
         preds = tf.nn.softmax(model.predict(val_ds))
         y_pred = np.argmax(preds, axis=1)
         report = classification_report(val_labels, y_pred, target_names=class_names, output_dict=True)
-                
+
         if report["weighted avg"]["f1-score"] > prev:
             prev = report["weighted avg"]["f1-score"]
             best_model = model
-            
+
     return best_model, report
 
 

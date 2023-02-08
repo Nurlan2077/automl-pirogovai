@@ -34,7 +34,8 @@ def add_model(model_body: ModelSummary):
         connection.commit()
         entity_id = get_created_id(cursor, "model")[0][0]
         logging.info(f"Model with body = {str(model_body)} has been created successfully")
-        return {"id": entity_id}
+        return JSONResponse(status_code=status.HTTP_201_CREATED,
+                            content={"id": entity_id})
     except mariadb.Error as e:
         logging.error(f"Could not create model with body: {str(model_body)}. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
