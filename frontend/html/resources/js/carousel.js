@@ -22,7 +22,7 @@ fetch(`http://pirogov-backend.net:8000/user-sessions/${id}/send-archive`, fetchO
 const responseElement = document.getElementById('metrics');
 
 const modelId = sessionStorage.getItem("modelId")
-fetch(`http://pirogov-backend.net:8000/model-metrics/${modelId}`)
+fetch(`http://pirogov-backend.net:8000/model-metrics/with-names/${modelId}`)
     .then(response => response.json())
     .then(data => {
         console.log(data)
