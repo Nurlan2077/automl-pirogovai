@@ -1,14 +1,12 @@
-import asyncio
+import glob
 import logging
 import os
 import numpy as np
 import tensorflow as tf
 from PIL import Image
-from keras import layers
-from keras.models import Sequential
 from sklearn.metrics import classification_report
-from loss_funcs import LOSS_FUNCS
-from optimizers import OPTIMIZERS
+from loss_funcs import LOSS_FUNCS_REVERSED
+from optimizers import OPTIMIZERS_REVERSED
 from fastapi import WebSocket
 
 logging.basicConfig(level=logging.INFO,
@@ -21,68 +19,39 @@ DEFAULT_DROPOUT = 0.2
 DEFAULT_EPOCHS = 10
 
 
-async def learn_models(websocket: WebSocket, dataset_path: str, markup_path: str | None = None,
+async def learn_models(websocket: WebSocket, dataset_path: str, models_path: str, markup_path: str | None = None,
                        params: dict | None = None) -> tuple[str, dict, int]:
-    tf.config.optimizer.set_experimental_options({'layout_optimizer': False})
-    width, height = __get_image_size(dataset_path)
-    train_ds, val_ds, class_names = __generate_train_val_ds(dataset_path, (width, height))
+    width, height = get_image_size(dataset_path)
+    _, val_ds, class_names = generate_train_val_ds(dataset_path, (width, height))
+    epochs = get_epochs_num()
 
-    data_augmentation = tf.keras.Sequential([
-        layers.RandomFlip("horizontal", input_shape=(width, height, 3)),
-        layers.RandomRotation(0.1),
-        layers.RandomZoom(0.1),
-    ])
-
-    dropout = __get_dropout_num()
-    num_classes = len(class_names)
-    sequential_layers = [
-        data_augmentation,
-        layers.Rescaling(1. / 255),
-        layers.Conv2D(16, 3, padding='same', activation='relu'),
-        layers.MaxPooling2D(),
-        layers.Conv2D(32, 3, padding='same', activation='relu'),
-        layers.MaxPooling2D(),
-        layers.Conv2D(64, 3, padding='same', activation='relu'),
-        layers.MaxPooling2D(),
-        layers.Dropout(dropout),
-        layers.Flatten(),
-        layers.Dense(128, activation='relu'),
-        layers.Dense(num_classes, name="outputs")
-    ]
-
-    models = []
-    epochs = __get_epochs_num()
-
-    total_count = len(OPTIMIZERS) * len(LOSS_FUNCS)
+    total_count = len(OPTIMIZERS_REVERSED) * len(LOSS_FUNCS_REVERSED)
     logging.info(f"Total count: {total_count}")
     i = 0
 
-    for optimizer in OPTIMIZERS:
-        for loss_func in LOSS_FUNCS:
-            optimizer_name = str(optimizer).split(".")[-1].split(" ")[0]
-            model = Sequential(sequential_layers)
-            model.compile(optimizer=optimizer, loss=loss_func, metrics=['accuracy'])
-            model.fit(train_ds, validation_data=val_ds, epochs=epochs)
-            model._name = optimizer_name + "_" + loss_func.name
-            models.append(model)
+    for optimizer in OPTIMIZERS_REVERSED:
+        for loss_func in LOSS_FUNCS_REVERSED:
+            os.system("python backend/ml/train_and_save_model.py {} {} {} {} {}".format(optimizer, loss_func, epochs, dataset_path, models_path))
             i += 1
             logging.info(f"{i * 100 / total_count}%")
             await websocket.send_text(f"{i * 100 / total_count}%")
-            await asyncio.sleep(1)
+            
+    path_to_model, report = get_best_model_and_metrics(models_path, val_ds, class_names)
+    metrics = {
+        "accuracy": report["accuracy"], 
+        "precision": report["weighted avg"]["precision"], 
+        "recall": report["weighted avg"]["recall"],
+        "f1-score": report["weighted avg"]["f1-score"]
+    }
 
-            del model
-            tf.keras.backend.clear_session()
-
-    model, metrics = __get_best_model_and_metrics(models, val_ds, class_names)
-    path_to_model = __save_model(model, dataset_path)
     logging.info(f"model path: {path_to_model}")
     logging.info(f"metrics: {metrics}")
-    test_metrics = {"accuracy": 0.3, "precision": 0.6, "recall": 0.2}
-    return path_to_model, test_metrics, epochs
+
+    return path_to_model, metrics, epochs
 
 
-def __generate_train_val_ds(dataset_path: str, image_size: tuple[int, int], val_split=0.2):
-    batch_size = __get_batch_size()
+def generate_train_val_ds(dataset_path: str, image_size: tuple[int, int], val_split=0.2):
+    batch_size = get_batch_size()
 
     train_ds = tf.keras.utils.image_dataset_from_directory(
         dataset_path,
@@ -107,27 +76,28 @@ def __generate_train_val_ds(dataset_path: str, image_size: tuple[int, int], val_
     return train_ds, val_ds, class_names
 
 
-def __get_best_model_and_metrics(models, val_ds, class_names: list[str]):
+def get_best_model_and_metrics(models_path, val_ds, class_names: list[str]):
     prev = 0
-    best_model = None
+    best_model_file = None
     report = None
 
     val_labels = np.concatenate([y for x, y in val_ds], axis=0)
 
-    for model in models:
+    for file in glob.glob(models_path + "*.h5"):
+        model = tf.keras.models.load_model(file)
         preds = tf.nn.softmax(model.predict(val_ds))
         y_pred = np.argmax(preds, axis=1)
         report = classification_report(val_labels, y_pred, target_names=class_names, output_dict=True)
 
         if report["weighted avg"]["f1-score"] > prev:
             prev = report["weighted avg"]["f1-score"]
-            best_model = model
+            best_model_file = file
 
-    return best_model, report
+    return best_model_file, report
 
 
-def __get_image_size(dataset_path: str) -> tuple[int, int]:
-    img = __get_first_image(dataset_path)
+def get_image_size(dataset_path: str) -> tuple[int, int]:
+    img = get_first_image(dataset_path)
     width, height = img.size
     if width < DEFAULT_IMAGE_SIZE or height < DEFAULT_IMAGE_SIZE:
         width = height = min(width, height)
@@ -135,26 +105,26 @@ def __get_image_size(dataset_path: str) -> tuple[int, int]:
     return (DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE)
 
 
-def __get_first_image(dataset_path: str) -> Image:
+def get_first_image(dataset_path: str) -> Image:
     first_class_name = os.listdir(dataset_path)[0]
     first_image_name = os.listdir(dataset_path + first_class_name)[0]
     return Image.open(dataset_path + first_class_name + "/" + first_image_name)
 
 
-def __save_model(model, dataset_path: str) -> str:
+def save_model(model, dataset_path: str) -> str:
     path = dataset_path + model.name + ".h5"
     model.save(path)
     return path
 
 
-def __get_batch_size(dataset_size: int = 0) -> int:
+def get_batch_size(dataset_size: int = 0) -> int:
     # batch size = available GPU memory bytes / 4 / (size of tensors + trainable parameters)
     return DEFAULT_BATCH_SIZE
 
 
-def __get_dropout_num():
+def get_dropout_num():
     return DEFAULT_DROPOUT
 
 
-def __get_epochs_num():
+def get_epochs_num():
     return DEFAULT_EPOCHS
