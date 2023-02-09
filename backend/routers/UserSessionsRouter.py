@@ -45,9 +45,10 @@ router = APIRouter(prefix="/user-sessions",
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def add_session(user_session_body: UserSessionSummary):
     try:
-        cursor.execute("insert into user_session(dataset_path, data_markup_path, user_id) values (?, ?, ?)",
-                       (user_session_body.dataset_path, user_session_body.data_markup_path,
-                        user_session_body.user_id))
+        cursor.execute(
+            "insert into user_session(dataset_path, data_markup_path, model_path, user_id) values (?, ?, ?, ?)",
+            (user_session_body.dataset_path, user_session_body.data_markup_path,
+             user_session_body.user_id))
         connection.commit()
         entity_id = get_created_id(cursor, "user_session")[0][0]
         logging.info(f"User session with body = {str(user_session_body)} has been created successfully")
@@ -79,7 +80,8 @@ def get_sessions():
         if len(result) > 0:
             for row in result:
                 sessions.append(
-                    UserSession(id=row[0], dataset_path=row[1], data_markup_path=row[2], user_id=row[3]))
+                    UserSession(id=row[0], dataset_path=row[1], data_markup_path=row[2], model_path=row[3],
+                                user_id=row[4]))
         return JSONResponse(status_code=status.HTTP_200_OK,
                             content=jsonable_encoder(sessions))
     except mariadb.Error as e:
@@ -98,7 +100,8 @@ def get_session(session_id: int):
             return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
                                 content=f"User session with id = {session_id} not found")
         user_session = UserSession(id=session_raw[0][0], dataset_path=session_raw[0][1],
-                                   data_markup_path=session_raw[0][2], user_id=session_raw[0][3])
+                                   data_markup_path=session_raw[0][2], model_path=session_raw[0][3],
+                                   user_id=session_raw[0][4])
         return JSONResponse(status_code=status.HTTP_200_OK,
                             content=jsonable_encoder(user_session))
     except mariadb.Error as e:
@@ -113,7 +116,8 @@ def update_session(session_id: int, session: UserSessionSummary):
     if get_response.status_code == status.HTTP_200_OK:
         old_session = json_to_schema(get_response.body, UserSession)
         session = UserSession(id=session_id, dataset_path=session.dataset_path,
-                              data_markup_path=session.data_markup_path, user_id=session.user_id)
+                              data_markup_path=session.data_markup_path, model_path=session.model_path,
+                              user_id=session.user_id)
         updates = compare_items(old_session, session)
         statement, inserts = make_update_statement([session_id], "user_session", ["id"], updates)
         if len(inserts) > 1:
@@ -129,22 +133,23 @@ def update_session(session_id: int, session: UserSessionSummary):
         return get_response
 
 
-model_path: str
-
-
 @router.get("/{session_id:int}/send-archive")
 def send_archive(session_id: int):
-    file_list = [model_path]
-    logging.info(f'{file_list}')
-    zip_io = BytesIO()
-    with zipfile.ZipFile(zip_io, mode='w', compression=zipfile.ZIP_DEFLATED) as temp_zip:
-        for file in file_list:
-            temp_zip.write(file)
-    return StreamingResponse(
-        iter([zip_io.getvalue()]),
-        media_type="application/x-zip-compressed",
-        headers={"Content-Disposition": f"attachment; filename=models-archive.zip"}
-    )
+    get_response = get_session(session_id)
+    if get_response.status_code == status.HTTP_200_OK:
+        session = json_to_schema(get_response.body, UserSession)
+        model_path = session.model_path
+        file_list = [model_path]
+        logging.info(f'{file_list}')
+        zip_io = BytesIO()
+        with zipfile.ZipFile(zip_io, mode='w', compression=zipfile.ZIP_DEFLATED) as temp_zip:
+            for file in file_list:
+                temp_zip.write(file)
+        return StreamingResponse(
+            iter([zip_io.getvalue()]),
+            media_type="application/x-zip-compressed",
+            headers={"Content-Disposition": f"attachment; filename=models-archive.zip"}
+        )
 
 
 def get_model_optimizer(model_name: str):
@@ -226,11 +231,11 @@ async def progress_socket(session_id: int, websocket: WebSocket):
             session = json_to_schema(get_response.body, UserSession)
             dataset_path = session.dataset_path
             markup_path = session.data_markup_path
+            model_path = session.model_path
             global hyperparams
             try:
                 await websocket.accept()
-                global model_path
-                model_path, metrics, epochs = await learn_models(websocket, dataset_path)
+                metrics, epochs = await learn_models(websocket, dataset_path)
                 model_id = save_model_to_db(get_model_name(model_path), session_id, epochs)
                 save_model_metrics_to_db(model_id, metrics)
                 await asyncio.sleep(1)
@@ -268,6 +273,14 @@ def launch_learning(session_id: int, hyperparams_: HyperParams):
                             content=f"Could not receive hyperparameters for session = {session_id}")
 
 
+def make_model_folder(session_id: int):
+    path_to_models_dir = f'{os.getcwd()}/models/{session_id}'
+    is_exist = os.path.exists(path_to_models_dir)
+    if not is_exist:
+        os.makedirs(path_to_models_dir)
+    return path_to_models_dir
+
+
 @router.post("/{session_id:int}/upload_dataset", status_code=status.HTTP_200_OK)
 async def upload_dataset(session_id: int, file: UploadFile):
     try:
@@ -293,14 +306,15 @@ async def upload_dataset(session_id: int, file: UploadFile):
                         f.write(chunk)
                 with zipfile.ZipFile(file_name, 'r') as zip_ref:
                     zip_ref.extractall(path_to_dir)
-                base_name = os.path.basename(file_name)
                 os.remove(path_to_dir + "/" + file_name)
             os.remove(file.filename)
+            model_path = make_model_folder(session_id)
             get_response = get_session(session_id)
             if get_response.status_code == status.HTTP_200_OK:
                 body = json_to_schema(get_response.body, UserSession)
                 update = UserSessionSummary(dataset_path=path_to_dir + "/",
                                             data_markup_path=body.data_markup_path,
+                                            model_path=model_path + "/",
                                             user_id=body.user_id)
                 return update_session(session_id, update)
             else:

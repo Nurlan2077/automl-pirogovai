@@ -88,12 +88,14 @@ class UserSession(BaseModel):
     id: int
     dataset_path: str
     data_markup_path: str
+    model_path: str
     user_id: int
 
 
 class UserSessionSummary(BaseModel):
     dataset_path: str
     data_markup_path: str
+    model_path: str
     user_id: int
 
 
