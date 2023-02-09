@@ -73,12 +73,18 @@ async def learn_models(websocket: WebSocket, dataset_path: str, markup_path: str
             del model
             tf.keras.backend.clear_session()
 
-    model, metrics = __get_best_model_and_metrics(models, val_ds, class_names)
+    model, report = __get_best_model_and_metrics(models, val_ds, class_names)
+    metrics = {
+        "accuracy": report["accuracy"], 
+        "precision": report["weighted avg"]["precision"], 
+        "recall": report["weighted avg"]["report"],
+        "f1-score": report["weighted avg"]["f1-score"]
+    }
+
     path_to_model = __save_model(model, dataset_path)
     logging.info(f"model path: {path_to_model}")
-    logging.info(f"metrics: {metrics}")
-    test_metrics = {"accuracy": 0.3, "precision": 0.6, "recall": 0.2}
-    return path_to_model, test_metrics, epochs
+    logging.info(f"metrics: {report}")
+    return path_to_model, metrics, epochs
 
 
 def __generate_train_val_ds(dataset_path: str, image_size: tuple[int, int], val_split=0.2):
