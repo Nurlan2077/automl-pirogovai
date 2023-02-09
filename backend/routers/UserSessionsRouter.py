@@ -48,7 +48,7 @@ def add_session(user_session_body: UserSessionSummary):
         cursor.execute(
             "insert into user_session(dataset_path, data_markup_path, model_path, user_id) values (?, ?, ?, ?)",
             (user_session_body.dataset_path, user_session_body.data_markup_path,
-             user_session_body.user_id))
+             user_session_body.model_path, user_session_body.user_id))
         connection.commit()
         entity_id = get_created_id(cursor, "user_session")[0][0]
         logging.info(f"User session with body = {str(user_session_body)} has been created successfully")
@@ -80,8 +80,8 @@ def get_sessions():
         if len(result) > 0:
             for row in result:
                 sessions.append(
-                    UserSession(id=row[0], dataset_path=row[1], data_markup_path=row[2], model_path=row[3],
-                                user_id=row[4]))
+                    UserSession(id=row[0], dataset_path=row[1], data_markup_path=row[2],user_id=row[3],
+                                model_path=row[4]))
         return JSONResponse(status_code=status.HTTP_200_OK,
                             content=jsonable_encoder(sessions))
     except mariadb.Error as e:
@@ -99,9 +99,10 @@ def get_session(session_id: int):
             logging.warning(f"User session with id = {session_id} not found")
             return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
                                 content=f"User session with id = {session_id} not found")
+        logging.info(session_raw[0])
         user_session = UserSession(id=session_raw[0][0], dataset_path=session_raw[0][1],
-                                   data_markup_path=session_raw[0][2], model_path=session_raw[0][3],
-                                   user_id=session_raw[0][4])
+                                   data_markup_path=session_raw[0][2], user_id=session_raw[0][3],
+                                   model_path=session_raw[0][4])
         return JSONResponse(status_code=status.HTTP_200_OK,
                             content=jsonable_encoder(user_session))
     except mariadb.Error as e:
@@ -235,8 +236,13 @@ async def progress_socket(session_id: int, websocket: WebSocket):
             global hyperparams
             try:
                 await websocket.accept()
-                metrics, epochs = await learn_models(websocket, dataset_path)
-                model_id = save_model_to_db(get_model_name(model_path), session_id, epochs)
+                updated_model_path, metrics, epochs = await learn_models(websocket, dataset_path, model_path)
+                session_summary = UserSessionSummary(dataset_path=dataset_path,
+                                                     markup_path=markup_path,
+                                                     model_path=updated_model_path,
+                                                     user_id=session.user_id)
+                update_session(session_id, session_summary)
+                model_id = save_model_to_db(get_model_name(updated_model_path), session_id, epochs)
                 save_model_metrics_to_db(model_id, metrics)
                 await asyncio.sleep(1)
                 await websocket.send_text(f"model id: {model_id}")
@@ -343,6 +349,7 @@ def upload_markup(session_id: int, file: UploadFile):
                 body = json_to_schema(get_response.body, UserSession)
                 update = UserSessionSummary(dataset_path=body.dataset_path,
                                             data_markup_path=path_to_markup,
+                                            model_path=body.model_path,
                                             user_id=body.user_id)
                 return update_session(session_id, update)
             else:
