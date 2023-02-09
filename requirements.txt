@@ -1,4 +1,0 @@
-pandas
-pillow
-tensorflow
-scikit-learn
