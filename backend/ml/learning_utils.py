@@ -51,15 +51,19 @@ async def learn_models(websocket: WebSocket, dataset_path: str, markup_path: str
     ]
 
     models = []
-    epochs = __get_epochs_num()
+    epochs = __get_epochs_num() if params is None else params["params"]["epochs"]
 
     total_count = len(OPTIMIZERS) * len(LOSS_FUNCS)
     logging.info(f"Total count: {total_count}")
     i = 0
 
     for optimizer in OPTIMIZERS:
+        optimizer_name = str(optimizer).split(".")[-1].split(" ")[0]
+        if params is not None and optimizer_name not in params["params"]["optimizers"]:
+            continue
         for loss_func in LOSS_FUNCS:
-            optimizer_name = str(optimizer).split(".")[-1].split(" ")[0]
+            if params is not None and LOSS_FUNCS[loss_func] in params["params"]["oprimizers"]:
+                continue
             model = Sequential(sequential_layers)
             model.compile(optimizer=optimizer, loss=loss_func, metrics=['accuracy'])
             model.fit(train_ds, validation_data=val_ds, epochs=epochs)

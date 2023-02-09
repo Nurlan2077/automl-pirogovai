@@ -1,8 +1,8 @@
 from keras import losses
 
-LOSS_FUNCS = [
-    losses.SparseCategoricalCrossentropy(from_logits=True),
-    losses.CategoricalHinge(),
-    losses.KLDivergence(),
-    losses.Poisson()
-]
+LOSS_FUNCS = {
+    losses.SparseCategoricalCrossentropy(from_logits=True) : "Разреженная категориальная перекрестная энтропия",
+    losses.CategoricalHinge() : "Категориальная верхняя граница",
+    losses.KLDivergence() : "Расстояние Кульбака-Лейблера",
+    losses.Poisson() : "Пуассон"
+}
