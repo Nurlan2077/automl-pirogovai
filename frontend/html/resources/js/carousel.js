@@ -14,13 +14,13 @@ fetch(`http://pirogov-backend.net:8000/user-sessions/${id}/send-archive`, fetchO
                         const link = document.getElementById('download');
                         link.href = URL.createObjectURL(blob);
                         link.download = "model.hdf5";
+                        link.style.display = "block";
                     });
                 });
             })
     })
 
 const responseElement = document.getElementById('metrics');
-
 const modelId = sessionStorage.getItem("modelId")
 fetch(`http://pirogov-backend.net:8000/model-metrics/with-names/${modelId}`)
     .then(response => response.json())
@@ -30,7 +30,7 @@ fetch(`http://pirogov-backend.net:8000/model-metrics/with-names/${modelId}`)
         let modelName = ""
         let newLine;
 
-        if (navigator.platform.indexOf("Win") === 0) {
+        if (navigator.indexOf("Win") === 0) {
             newLine = "\r\n";
         } else {
             newLine = "\n";
@@ -39,6 +39,7 @@ fetch(`http://pirogov-backend.net:8000/model-metrics/with-names/${modelId}`)
             let item = data[i]
             if (i === 0) {
                 modelName = item.model_name
+                document.getElementById('modelName').innerText = modelName;
             }
             result += `${item.metric_name}: ${item.metric_value}` + newLine
         }
