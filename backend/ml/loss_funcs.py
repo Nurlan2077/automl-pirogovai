@@ -6,3 +6,10 @@ LOSS_FUNCS = {
     losses.KLDivergence() : "Расстояние Кульбака-Лейблера",
     losses.Poisson() : "Пуассон"
 }
+
+LOSS_FUNCS_REVERSED = {
+	"CCE": losses.SparseCategoricalCrossentropy(from_logits=True),
+	"CategoricalHinge": losses.CategoricalHinge(),
+	"KLDivergence": losses.KLDivergence(),
+	"Poisson": losses.Poisson()
+}

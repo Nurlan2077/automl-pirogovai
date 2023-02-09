@@ -9,3 +9,4 @@
 **/train
 /frontend/node_modules/
 /backend/pass
+**/saved_models
