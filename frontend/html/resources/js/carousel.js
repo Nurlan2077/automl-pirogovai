@@ -30,7 +30,7 @@ fetch(`http://pirogov-backend.net:8000/model-metrics/with-names/${modelId}`)
         let modelName = ""
         let newLine;
 
-        if (navigator.indexOf("Win") === 0) {
+        if (navigator.platform.indexOf("Win") === 0) {
             newLine = "\r\n";
         } else {
             newLine = "\n";
