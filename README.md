@@ -4,7 +4,7 @@
 1.  Есть ветки ml, backend, frontend, которые соответствуют компонентам архитектуры.<br/>
 1.1.  В ветке ml работают [Александр](https://github.com/aamochalov) и [Нурлан](https://github.com/Nurlan2077).<br/>
 1.2.  В ветке backend работают [Мария](https://github.com/MSenso) и [Матвей](https://github.com/michigantsev).<br/>
-1.3.  В ветке frontend работает [Дарина](https://github.com/ChDarina).<br/>
+1.3.  В ветке frontend работает Дарина.<br/>
 2.  Все компоненты (ml, backend, frontend) развёртываются отдельно (микросервисная архитектура), общаются по API.<br/>
 2.1.  Контракты по API предварительно обсуждаются обеими сторонами (ml и backend, backend и frontend).<br/>
 2.2.  В readme каждой ветки будет инструкция по развертыванию компонента этой ветки.<br/>
@@ -46,8 +46,6 @@ Some useful commands:
 
 <code>docker logs container_name [optional: -f] </code> - check logs of specific container. Use flag -f to do it in real-time
 
-<code>mariadb -h 127.0.0.1 -P 3306 -u root</code> - enter command line MariaDB interface
-
-<code>mysqldump -h 127.0.0.1 -P 3306 -u root auto_model_learning -B > path/to/env/dumps/YYYY-MM-DD.sql</code> - export db dump manually (in case scheduler is not working or if you need a new dump right now). Also make sure to update MOST_RECENT variable in .env file so it points to the dump you need
+How to export a dump: mysqldump -h 127.0.0.1 -P 3306 -u root auto_model_learning -B > path/to/env/dumps/YYYY-MM-DD.sql
 
 How to work with dumps: https://simplebackups.com/blog/the-complete-mysqldump-guide-with-examples/#importing-a-mysqldump

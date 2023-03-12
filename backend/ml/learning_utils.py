@@ -1,3 +1,4 @@
+import asyncio
 import glob
 import logging
 import os
@@ -8,6 +9,12 @@ from sklearn.metrics import classification_report
 from loss_funcs import LOSS_FUNCS_REVERSED
 from optimizers import OPTIMIZERS_REVERSED
 from fastapi import WebSocket
+from tensorflow.compat.v1 import ConfigProto
+from tensorflow.compat.v1 import InteractiveSession
+
+config = ConfigProto()
+config.gpu_options.allow_growth = True
+session = InteractiveSession(config=config)
 
 logging.basicConfig(level=logging.INFO,
                     format="%(levelname)s:  %(asctime)s  %(message)s",
@@ -21,6 +28,7 @@ DEFAULT_EPOCHS = 10
 
 async def learn_models(websocket: WebSocket, dataset_path: str, models_path: str, markup_path: str | None = None,
                        params: dict | None = None) -> tuple[str, dict, int]:
+    tf.config.optimizer.set_experimental_options({'layout_optimizer': False})
     width, height = get_image_size(dataset_path)
     _, val_ds, class_names = generate_train_val_ds(dataset_path, (width, height))
     epochs = get_epochs_num()
@@ -31,10 +39,11 @@ async def learn_models(websocket: WebSocket, dataset_path: str, models_path: str
 
     for optimizer in OPTIMIZERS_REVERSED:
         for loss_func in LOSS_FUNCS_REVERSED:
-            os.system("python backend/ml/train_and_save_model.py {} {} {} {} {}".format(optimizer, loss_func, epochs, dataset_path, models_path))
+            os.system("python ml/train_and_save_model.py {} {} {} {} {}".format(optimizer, loss_func, epochs, dataset_path, models_path))
             i += 1
             logging.info(f"{i * 100 / total_count}%")
             await websocket.send_text(f"{i * 100 / total_count}%")
+            await asyncio.sleep(1)
             
     path_to_model, report = get_best_model_and_metrics(models_path, val_ds, class_names)
     metrics = {

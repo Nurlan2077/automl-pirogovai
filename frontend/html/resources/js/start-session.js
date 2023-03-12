@@ -1,8 +1,9 @@
 async function postSessionId() {
     const id = 0;
     let json_item = {
-        "dataset_path": "test redirect",
-        "data_markup_path": "test redirect",
+        "dataset_path": "",
+        "data_markup_path": "",
+        "model_path": "",
         "user_id": id
     }
     const fetchOptions = {
