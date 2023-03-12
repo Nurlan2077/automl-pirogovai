@@ -1,3 +1,4 @@
+import asyncio
 import glob
 import logging
 import os
@@ -8,6 +9,12 @@ from sklearn.metrics import classification_report
 from loss_funcs import LOSS_FUNCS_REVERSED
 from optimizers import OPTIMIZERS_REVERSED
 from fastapi import WebSocket
+from tensorflow.compat.v1 import ConfigProto
+from tensorflow.compat.v1 import InteractiveSession
+
+config = ConfigProto()
+config.gpu_options.allow_growth = True
+session = InteractiveSession(config=config)
 
 logging.basicConfig(level=logging.INFO,
                     format="%(levelname)s:  %(asctime)s  %(message)s",
@@ -36,6 +43,7 @@ async def learn_models(websocket: WebSocket, dataset_path: str, models_path: str
             i += 1
             logging.info(f"{i * 100 / total_count}%")
             await websocket.send_text(f"{i * 100 / total_count}%")
+            await asyncio.sleep(1)
             
     path_to_model, report = get_best_model_and_metrics(models_path, val_ds, class_names)
     metrics = {

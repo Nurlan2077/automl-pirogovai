@@ -27,6 +27,7 @@ from .connection import Connection
 from .models import UserSession, UserSessionSummary, json_to_schema, HyperParams, Optimizer, LossFunction, ModelSummary, \
     ModelMetric, Metric
 from .utils import make_update_statement, compare_items, get_created_id, get_id
+from .UsersRouter import send_email
 
 sys.path.append("/app/ml")
 from learning_utils import learn_models
@@ -229,16 +230,16 @@ async def progress_socket(session_id: int, websocket: WebSocket):
     try:
         get_response = get_session(session_id)
         if get_response.status_code == status.HTTP_200_OK:
-            session = json_to_schema(get_response.body, UserSession)
+            session: UserSession = json_to_schema(get_response.body, UserSession)
             dataset_path = session.dataset_path
-            markup_path = session.data_markup_path
+            data_markup_path = session.data_markup_path
             model_path = session.model_path
             global hyperparams
             try:
                 await websocket.accept()
                 updated_model_path, metrics, epochs = await learn_models(websocket, dataset_path, model_path)
                 session_summary = UserSessionSummary(dataset_path=dataset_path,
-                                                     markup_path=markup_path,
+                                                     data_markup_path=data_markup_path,
                                                      model_path=updated_model_path,
                                                      user_id=session.user_id)
                 update_session(session_id, session_summary)
@@ -249,12 +250,11 @@ async def progress_socket(session_id: int, websocket: WebSocket):
                 await asyncio.sleep(1)
                 await websocket.send_text("Processing completed.")
                 await websocket.close()
+                await send_email(session.user_id)
             except WebSocketDisconnect as e:
                 logging.error(f"{e}")
     except Exception as e:
         logging.error(f"Could not make learning for session = {session_id}. Error: {e}")
-        await websocket.send_text("Error")
-        await websocket.close()
 
 
 hyperparams: HyperParams
