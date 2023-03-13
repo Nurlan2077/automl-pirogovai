@@ -4,21 +4,13 @@ const fetchOptions = {
 };
 const jsZip = JSZip();
 fetch(`http://pirogov-backend.net:8000/user-sessions/${id}/send-archive`, fetchOptions)
-    .then(response => response.arrayBuffer())
-    .then(arrayBuffer => {
-        jsZip.loadAsync(arrayBuffer)
-            .then(zip => {
-                Object.keys(zip.files).forEach(f_name => {
-                    zip.file(f_name).async("arraybuffer").then(function (content) {
-                        const blob = new Blob([content], {type: "application/x-hdf"});
-                        const link = document.getElementById('download');
-                        link.href = URL.createObjectURL(blob);
-                        link.download = "model.hdf5";
-                        link.style.display = "block";
-                    });
-                });
-            })
-    })
+    .then(response => response.blob())
+    .then(blob => {
+        const link = document.getElementById('download');
+        link.href = URL.createObjectURL(blob);
+        link.download = "archive.zip";
+        link.style.display = "block";
+    });
 
 const responseElement = document.getElementById('metrics');
 const modelId = sessionStorage.getItem("modelId")
