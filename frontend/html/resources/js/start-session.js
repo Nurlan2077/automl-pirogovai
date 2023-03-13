@@ -4,7 +4,8 @@ async function postSessionId() {
         "dataset_path": "",
         "data_markup_path": "",
         "model_path": "",
-        "user_id": id
+        "user_id": id,
+        "metrics_path": ""
     }
     const fetchOptions = {
         method: 'POST', body: JSON.stringify(json_item ), headers: {
