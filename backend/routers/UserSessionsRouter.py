@@ -81,7 +81,7 @@ def get_sessions():
         if len(result) > 0:
             for row in result:
                 sessions.append(
-                    UserSession(id=row[0], dataset_path=row[1], data_markup_path=row[2],user_id=row[3],
+                    UserSession(id=row[0], dataset_path=row[1], data_markup_path=row[2], user_id=row[3],
                                 model_path=row[4]))
         return JSONResponse(status_code=status.HTTP_200_OK,
                             content=jsonable_encoder(sessions))
@@ -237,7 +237,8 @@ async def progress_socket(session_id: int, websocket: WebSocket):
             global hyperparams
             try:
                 await websocket.accept()
-                updated_model_path, metrics, epochs = await learn_models(websocket, dataset_path, model_path)
+                updated_model_path, metrics, epochs = await learn_models(websocket, dataset_path, model_path,
+                                                                         hyperparams)
                 session_summary = UserSessionSummary(dataset_path=dataset_path,
                                                      data_markup_path=data_markup_path,
                                                      model_path=updated_model_path,
