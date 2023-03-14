@@ -12,6 +12,7 @@ DEFAULT_BATCH_SIZE = 32
 DEFAULT_DROPOUT = 0.2
 DEFAULT_EPOCHS = 1
 
+
 def generate_train_val_ds(dataset_path: str, image_size: tuple[int, int], val_split=0.2):
     batch_size = get_batch_size()
 
@@ -51,6 +52,7 @@ def get_first_image(dataset_path: str) -> Image:
     first_class_name = os.listdir(dataset_path)[0]
     first_image_name = os.listdir(dataset_path + first_class_name)[0]
     return Image.open(dataset_path + first_class_name + "/" + first_image_name)
+
 
 def get_batch_size(dataset_size: int = 0) -> int:
     # batch size = available GPU memory bytes / 4 / (size of tensors + trainable parameters)
@@ -103,3 +105,4 @@ history = model.fit(train_ds, validation_data=val_ds, epochs=epochs)
 
 model._name = optimizer_name + "_" + loss_func.name
 model.save(models_path + optimizer_name + "_" + loss_func.name + ".h5")
+del model

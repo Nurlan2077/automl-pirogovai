@@ -9,7 +9,6 @@ import tensorflow as tf
 from PIL import Image
 from sklearn.metrics import classification_report
 
-from backend.routers.models import HyperParams
 from loss_funcs import LOSS_FUNCS_REVERSED
 from optimizers import OPTIMIZERS_REVERSED
 from fastapi import WebSocket
@@ -31,21 +30,20 @@ DEFAULT_EPOCHS = 10
 
 
 async def learn_models(websocket: WebSocket, dataset_path: str, models_path: str, markup_path: Optional[str],
-                       params: HyperParams) -> tuple[str, dict, int]:
+                       params: dict[str, str | int]) -> tuple[str, dict, int]:
     tf.config.optimizer.set_experimental_options({'layout_optimizer': False})
     width, height = get_image_size(dataset_path)
     _, val_ds, class_names = generate_train_val_ds(dataset_path, (width, height))
-    epochs = params.epochs
-
-    total_count = len(OPTIMIZERS_REVERSED) * len(LOSS_FUNCS_REVERSED)
+    epochs = params["epochs"]
+    total_count = len(params["optimizer"]) * len(params["lossFunction"])
     logging.info(f"Total count: {total_count}")
     i = 0
 
     for optimizer in OPTIMIZERS_REVERSED:
-        if optimizer not in params.optimizers:
+        if optimizer not in params["optimizer"]:
             continue
         for loss_func in LOSS_FUNCS_REVERSED:
-            if loss_func not in params.losses:
+            if loss_func not in params["lossFunction"]:
                 continue
             os.system("python ml/train_and_save_model.py {} {} {} {} {}".
                       format(optimizer, loss_func, epochs, dataset_path, models_path))
@@ -53,6 +51,7 @@ async def learn_models(websocket: WebSocket, dataset_path: str, models_path: str
             logging.info(f"{i * 100 / total_count}%")
             await websocket.send_text(f"{i * 100 / total_count}%")
             await asyncio.sleep(1)
+            tf.keras.backend.clear_session()
 
     path_to_model, report = get_best_model_and_metrics(models_path, val_ds, class_names)
     metrics = {

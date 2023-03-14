@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 import asyncio
+import json
 import logging
 import os
 import pathlib
@@ -18,14 +19,14 @@ from fastapi.responses import JSONResponse
 from starlette.responses import StreamingResponse
 from starlette.websockets import WebSocketDisconnect
 
-from .LossFunctionsRouter import get_loss_function_by_name
-from .MetricsRouter import get_metric_by_name
+from .LossFunctionsRouter import get_loss_function_by_name, add_loss_function
+from .MetricsRouter import get_metric_by_name, add_metric
 from .ModelMetricsRouter import add_model_metric
 from .ModelsRouter import add_model
-from .OptimizersRouter import get_optimizer_by_name
+from .OptimizersRouter import get_optimizer_by_name, add_optimizer
 from .connection import Connection
 from .models import UserSession, UserSessionSummary, json_to_schema, HyperParams, Optimizer, LossFunction, ModelSummary, \
-    ModelMetric, Metric
+    ModelMetric, Metric, OptimizerSummary, MetricSummary, LossFunctionSummary
 from .utils import make_update_statement, compare_items, get_created_id, get_id
 from .UsersRouter import send_email
 
@@ -161,7 +162,7 @@ def get_model_optimizer(model_name: str):
     if optimizer_response.status_code == status.HTTP_200_OK:
         optimizer_id = json_to_schema(optimizer_response.body, Optimizer).id
     else:
-        optimizer_id = None
+        optimizer_id = json.loads(add_optimizer(OptimizerSummary(name=optimizer_name)).body)["id"]
     return optimizer_id
 
 
@@ -172,7 +173,7 @@ def get_model_loss_function(model_name: str):
     if loss_function_response.status_code == status.HTTP_200_OK:
         loss_function_id = json_to_schema(loss_function_response.body, LossFunction).id
     else:
-        loss_function_id = None
+        loss_function_id = json.loads(add_loss_function(LossFunctionSummary(name=loss_function_name)).body)["id"]
     return loss_function_id
 
 
@@ -200,7 +201,7 @@ def get_metric_id(metric_name: str):
     if metric_response.status_code == status.HTTP_200_OK:
         metric_id = json_to_schema(metric_response.body, Metric).id
     else:
-        metric_id = None
+        metric_id = json.loads(add_metric(MetricSummary(name=metric_name)).body)["id"]
     return metric_id
 
 
@@ -225,6 +226,9 @@ def get_model_name(path_to_model: str):
     return path_to_model[last_slash + 1:dot]
 
 
+hyperparams: HyperParams
+
+
 @router.websocket("/{session_id:int}/progress")
 async def progress_socket(session_id: int, websocket: WebSocket):
     try:
@@ -238,7 +242,7 @@ async def progress_socket(session_id: int, websocket: WebSocket):
             try:
                 await websocket.accept()
                 updated_model_path, metrics, epochs = await learn_models(websocket, dataset_path, model_path,
-                                                                         hyperparams)
+                                                                         data_markup_path, hyperparams.__dict__)
                 session_summary = UserSessionSummary(dataset_path=dataset_path,
                                                      data_markup_path=data_markup_path,
                                                      model_path=updated_model_path,
@@ -258,11 +262,8 @@ async def progress_socket(session_id: int, websocket: WebSocket):
         logging.error(f"Could not make learning for session = {session_id}. Error: {e}")
 
 
-hyperparams: HyperParams
-
-
-@router.post("/{session_id:int}/learn", status_code=status.HTTP_200_OK)
-def launch_learning(session_id: int, hyperparams_: HyperParams):
+@router.post("/{session_id:int}/hyperparams", status_code=status.HTTP_200_OK)
+def get_hyperparams(session_id: int, hyperparams_: HyperParams):
     try:
         get_response = get_session(session_id)
         if get_response.status_code == status.HTTP_200_OK:
