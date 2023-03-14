@@ -16,13 +16,15 @@
 <form class="p-2 form-group" method="post" id="hyperparametersForm">
     <h4 class="p-2">Настройки обучения</h4>
     <div class="p-2 form-group row">
-        <label for="optimiser" class="col-sm-2 control-label">Оптимизатор</label>
+        <label for="optimizer" class="col-sm-2 control-label">Оптимизатор</label>
         <div class="col-sm-4">
-            <select class="form-select" id="optimiser" name="optimiser">
-                <option selected value="something" hidden>по умолчанию</option>
-                <option value="something">something</option>
-                <option value="something">something</option>
-                <option value="something">something</option>
+            <select class="form-select" id="optimizer" name="optimizer">
+                <option selected value="default" hidden>по умолчанию</option>
+                <option value="Adam">Adam</option>
+                <option value="Nadam">Nadam</option>
+                <option value="Adadelta">Adadelta</option>
+                <option value="RMSprop">RMSprop</option>
+                <option value="Adamax">Adamax</option>
             </select>
         </div>
     </div>
@@ -30,43 +32,58 @@
         <label for="lossFunction" class="col-sm-2 control-label">Функция потерь</label>
         <div class="col-sm-4">
             <select class="form-select" id="lossFunction" name="lossFunction">
-                <option selected value="something" hidden>по умолчанию</option>
-                <option value="something">something</option>
-                <option value="something">something</option>
-                <option value="something">something</option>
+                <option selected value="default" hidden>по умолчанию</option>
+                <option value="Poisson">Пуассон</option>
+                <option value="KLDivergence">Расстояние Кульбака-Лейблера</option>
+                <option value="CCE">Разреженная категориальная перекрестная энтропия</option>
+                <option value="CategoricalHinge">Категориальная верхняя граница</option>
             </select>
         </div>
     </div>
+<!--    <div class="p-2 form-group row">-->
+<!--        <label for="SNS" class="col-sm-2 control-label">СНС для выявления признаков</label>-->
+<!--        <div class="col-sm-4">-->
+<!--            <select class="form-select" id="SNS" name="SNS">-->
+<!--                <option selected value="something" hidden>по умолчанию</option>-->
+<!--                <option value="something">something</option>-->
+<!--                <option value="something">something</option>-->
+<!--                <option value="something">something</option>-->
+<!--            </select>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--    <div class="p-2 form-group">-->
+<!--        <label class="col-sm-2 control-label" for="augmentation">Аугментация</label>-->
+<!--        <input type="checkbox" id="augmentation" name="augmentation" value="true" class="form-check-input" checked/>-->
+<!--    </div>-->
     <div class="p-2 form-group row">
-        <label for="SNS" class="col-sm-2 control-label">СНС для выявления признаков</label>
+        <label for="dropout" class="col-sm-2 control-label">Dropout</label>
         <div class="col-sm-4">
-            <select class="form-select" id="SNS" name="SNS">
-                <option selected value="something" hidden>по умолчанию</option>
-                <option value="something">something</option>
-                <option value="something">something</option>
-                <option value="something">something</option>
-            </select>
+            <input class="form-control" type="text" placeholder="по умолчанию" id="dropout" name="dropout"/>
         </div>
     </div>
-    <div class="p-2 form-group">
-        <label class="col-sm-2 control-label" for="augmentation">Аугментация</label>
-        <input type="checkbox" id="augmentation" name="augmentation" value="true" class="form-check-input" checked/>
-    </div>
     <div class="p-2 form-group row">
-        <label for="learningRate" class="col-sm-2 control-label">Скорость обучения</label>
+        <label for="batchSize" class="col-sm-2 control-label">Размер батча</label>
         <div class="col-sm-4">
-            <input class="form-control" type="text" placeholder="по умолчанию" id="learningRate" name="learningRate"/>
+            <input class="form-control" type="text" placeholder="по умолчанию" id="batchSize" name="batchSize"/>
         </div>
     </div>
     <div class="p-2 form-group row">
         <label for="epochs" class="col-sm-2 control-label">Количество эпох</label>
         <div class="col-sm-4">
-            <input class="form-control" type="text" placeholder="по умолчанию" id="epochs" name="epochs"/>
+            <select class="form-select" id="epochs" name="epochs">
+                <option selected value="default" hidden>по умолчанию</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="30">30</option>
+                <option value="40">40</option>
+                <option value="50">50</option>
+            </select>
         </div>
 
     </div>
     <div class="p-2 d-grid gap-2 col-6">
-        <input class="btn btn-primary" type="submit" value="Начать обучение" id="submit" onclick="submitData(); return false;"/>
+        <input class="btn btn-primary" type="submit" value="Начать обучение" id="submit"
+               onclick="submitData(); return false;"/>
     </div>
 </form>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"
