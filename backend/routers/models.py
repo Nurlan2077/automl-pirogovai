@@ -91,6 +91,7 @@ class UserSession(BaseModel):
     dataset_path: str
     data_markup_path: str
     model_path: str
+    metrics_path: str
     user_id: int
 
 
@@ -98,6 +99,7 @@ class UserSessionSummary(BaseModel):
     dataset_path: str
     data_markup_path: str
     model_path: str
+    metrics_path: str
     user_id: int
 
 
