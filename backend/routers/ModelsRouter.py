@@ -51,14 +51,32 @@ def get_models():
         if len(result) > 0:
             for row in result:
                 models.append(Model(id=row[0], session_id=row[1], name=row[2],
-                                    features_cnn_id=row[3], optimizer_id=row[4], loss_functuion_id=row[5],
-                                    augmetation=row[6], learning_speed=row[7], epoch_count=row[8]))
+                                    features_cnn_id=row[3], optimizer_id=row[4], loss_function_id=row[5],
+                                    augmentation=row[6], learning_speed=row[7], epoch_count=row[8]))
         return JSONResponse(status_code=status.HTTP_200_OK,
                             content=jsonable_encoder(models))
     except mariadb.Error as e:
         logging.error(f"Could not get models. Error: {e}")
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
                             content="Could not get models")
+
+
+@router.delete("/{model_id}", status_code=status.HTTP_200_OK)
+def delete_model(model_id: int):
+    get_response = get_model(model_id)
+    if get_response.status_code == status.HTTP_200_OK:
+        try:
+            cursor.execute("delete from model where id = ?", (model_id,))
+            connection.commit()
+            logging.info(f"Model with id = {str(model_id)} has been deleted successfully")
+        except mariadb.Error as e:
+            logging.error(f"Could not delete model with id = {str(model_id)}. Error: {e}")
+            return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                                content=f"Could not delete model with id = {str(model_id)}")
+    else:
+        logging.error(f"Could not delete model with id = {str(model_id)}. Error: entity does not exist.")
+        JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                     content=f"Could not delete model with id = {str(model_id)} because entity does not exist.")
 
 
 @router.get("/{model_id}", status_code=status.HTTP_200_OK)
@@ -71,8 +89,8 @@ def get_model(model_id: int):
             return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
                                 content=f"Model with id = {model_id} not found")
         model = Model(id=row[0][0], session_id=row[0][1], name=row[0][2],
-                      features_cnn_id=row[0][3], optimizer_id=row[0][4], loss_functuion_id=row[0][5],
-                      augmetation=row[0][6], learning_speed=row[0][7], epoch_count=row[0][8])
+                      features_cnn_id=row[0][3], optimizer_id=row[0][4], loss_function_id=row[0][5],
+                      augmentation=row[0][6], learning_speed=row[0][7], epoch_count=row[0][8])
         return JSONResponse(status_code=status.HTTP_200_OK,
                             content=jsonable_encoder(model))
     except mariadb.Error as e:
