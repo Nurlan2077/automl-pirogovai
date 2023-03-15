@@ -2,15 +2,20 @@ import asyncio
 import glob
 import logging
 import os
+from typing import Optional
+
 import numpy as np
 import tensorflow as tf
 from PIL import Image
 from sklearn.metrics import classification_report
+
 from loss_funcs import LOSS_FUNCS_REVERSED
 from optimizers import OPTIMIZERS_REVERSED
 from fastapi import WebSocket
 from tensorflow.compat.v1 import ConfigProto
 from tensorflow.compat.v1 import InteractiveSession
+
+from train_and_save_model import train
 
 config = ConfigProto()
 config.gpu_options.allow_growth = True
@@ -26,29 +31,33 @@ DEFAULT_DROPOUT = 0.2
 DEFAULT_EPOCHS = 10
 
 
-async def learn_models(websocket: WebSocket, dataset_path: str, models_path: str, markup_path: str | None = None,
-                       params: dict | None = None) -> tuple[str, dict, int]:
+async def learn_models(websocket: WebSocket, dataset_path: str, models_path: str, markup_path: Optional[str],
+                       params: dict[str, str | int]) -> tuple[str, dict, int]:
     tf.config.optimizer.set_experimental_options({'layout_optimizer': False})
     width, height = get_image_size(dataset_path)
     _, val_ds, class_names = generate_train_val_ds(dataset_path, (width, height))
-    epochs = get_epochs_num()
-
-    total_count = len(OPTIMIZERS_REVERSED) * len(LOSS_FUNCS_REVERSED)
+    epochs = params["epochs"]
+    total_count = len(params["optimizer"]) * len(params["lossFunction"])
     logging.info(f"Total count: {total_count}")
     i = 0
 
     for optimizer in OPTIMIZERS_REVERSED:
+        if optimizer not in params["optimizer"]:
+            continue
         for loss_func in LOSS_FUNCS_REVERSED:
-            os.system("python ml/train_and_save_model.py {} {} {} {} {}".format(optimizer, loss_func, epochs, dataset_path, models_path))
+            if loss_func not in params["lossFunction"]:
+                continue
+            train(optimizer, loss_func, epochs, dataset_path, models_path)
             i += 1
             logging.info(f"{i * 100 / total_count}%")
             await websocket.send_text(f"{i * 100 / total_count}%")
             await asyncio.sleep(1)
-            
+            tf.keras.backend.clear_session()
+
     path_to_model, report = get_best_model_and_metrics(models_path, val_ds, class_names)
     metrics = {
-        "accuracy": report["accuracy"], 
-        "precision": report["weighted avg"]["precision"], 
+        "accuracy": report["accuracy"],
+        "precision": report["weighted avg"]["precision"],
         "recall": report["weighted avg"]["recall"],
         "f1-score": report["weighted avg"]["f1-score"]
     }

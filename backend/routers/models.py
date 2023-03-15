@@ -49,7 +49,9 @@ class HyperParam(BaseModel):
 
 
 class HyperParams(BaseModel):
-    params: List[HyperParam]
+    optimizer: List[str]
+    lossFunction: List[str]
+    epochs: int
 
 
 class ModelSummary(BaseModel):
