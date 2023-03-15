@@ -9,27 +9,15 @@ function submitData() {
     for (const pair of formData.entries()) {
         switch (pair[0]) {
             case "epochs":
-                if (is_default(pair[1])) {
-                    json_items[pair[0]] = 10
-                } else {
-                    json_items[pair[0]] = parseInt(pair[1].toString())
-                }
+                json_items[pair[0]] = parseInt(pair[1].toString())
                 break
             case "optimizer":
-                if (is_default(pair[1])) {
-                    json_items[pair[0]] = ["Adam", "Nadam", "Adadelta", "RMSprop", "Adamax"]
-                } else {
-                    if (!(pair[0] in json_items)) json_items[pair[0]] = []
+                if (!(pair[0] in json_items)) json_items[pair[0]] = []
                     json_items[pair[0]].push(pair[1])
-                }
                 break
             case "lossFunction":
-                if (is_default(pair[1])) {
-                    json_items[pair[0]] = ["CategoricalHinge", "Poisson", "KLDivergence", "CCE"]
-                } else {
-                    if (!(pair[0] in json_items)) json_items[pair[0]] = []
+                if (!(pair[0] in json_items)) json_items[pair[0]] = []
                     json_items[pair[0]].push(pair[1])
-                }
                 break
         }
     }
