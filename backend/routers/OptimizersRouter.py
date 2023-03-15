@@ -38,13 +38,20 @@ def add_optimizer(optimizer_body: OptimizerSummary):
 
 @router.delete("/{optimizer_id}", status_code=status.HTTP_200_OK)
 def delete_optimizer(optimizer_id: int):
-    try:
-        cursor.execute("delete from optimizer where id = ?", (optimizer_id,))
-        logging.info(f"Optimizer with id = {str(optimizer_id)} has been deleted successfully")
-    except mariadb.Error as e:
-        logging.error(f"Could not delete optimizer with id = {str(optimizer_id)}. Error: {e}")
-        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
-                            content=f"Could not delete optimizer with id = {str(optimizer_id)}")
+    get_response = get_optimizer(optimizer_id)
+    if get_response.status_code == status.HTTP_200_OK:
+        try:
+            cursor.execute("delete from optimizer where id = ?", (optimizer_id,))
+            connection.commit()
+            logging.info(f"Optimizer with id = {str(optimizer_id)} has been deleted successfully")
+        except mariadb.Error as e:
+            logging.error(f"Could not delete optimizer with id = {str(optimizer_id)}. Error: {e}")
+            return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                                content=f"Could not delete optimizer with id = {str(optimizer_id)}")
+    else:
+        logging.error(f"Could not delete optimizer with id = {str(optimizer_id)}. Error: entity does not exist.")
+        JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                     content=f"Could not delete optimizer with id = {str(optimizer_id)} because entity does not exist.")
 
 
 @router.get("/", status_code=status.HTTP_200_OK)

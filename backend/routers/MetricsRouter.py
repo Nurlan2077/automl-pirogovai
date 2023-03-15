@@ -40,13 +40,21 @@ def add_metric(metric_body: MetricSummary):
 
 @router.delete("/{metric_id}", status_code=status.HTTP_200_OK)
 def delete_metric(metric_id: int):
-    try:
-        cursor.execute("delete from metric where id = ?", (metric_id,))
-        logging.info(f"Metric with id = {str(metric_id)} has been deleted successfully")
-    except mariadb.Error as e:
-        logging.error(f"Could not delete metric with id = {str(metric_id)}. Error: {e}")
-        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
-                            content=f"Could not delete metric with id = {str(metric_id)}")
+    get_response = get_metric(metric_id)
+    if get_response.status_code == status.HTTP_200_OK:
+        try:
+            cursor.execute("delete from metric where id = ?", (metric_id,))
+            connection.commit()
+            logging.info(f"Metric with id = {str(metric_id)} has been deleted successfully")
+        except mariadb.Error as e:
+            logging.error(f"Could not delete metric with id = {str(metric_id)}. Error: {e}")
+            return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                                content=f"Could not delete metric with id = {str(metric_id)}")
+    else:
+        logging.error(f"Could not delete metric with id = {str(metric_id)}. Error: entity does not exist.")
+        JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                     content=f"Could not delete metric with id = {str(metric_id)} because entity does not "
+                             f"exist.")
 
 
 @router.put("/{metric_id}", status_code=status.HTTP_200_OK)

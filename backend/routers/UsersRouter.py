@@ -97,13 +97,20 @@ def add_user(user: User):
 
 @router.delete("/{user_id}", status_code=status.HTTP_200_OK)
 def delete_user(user_id: int):
-    try:
-        cursor.execute("delete from users where id = ?", (user_id,))
-        logging.info(f"User with id = {str(user_id)} has been deleted successfully")
-    except mariadb.Error as e:
-        logging.error(f"Could not delete user with id = {str(user_id)}. Error: {e}")
-        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
-                            content=f"Could not delete user with id = {str(user_id)}")
+    get_response = get_user(user_id)
+    if get_response.status_code == status.HTTP_200_OK:
+        try:
+            cursor.execute("delete from users where id = ?", (user_id,))
+            connection.commit()
+            logging.info(f"User with id = {str(user_id)} has been deleted successfully")
+        except mariadb.Error as e:
+            logging.error(f"Could not delete user with id = {str(user_id)}. Error: {e}")
+            return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                                content=f"Could not delete user with id = {str(user_id)}")
+    else:
+        logging.error(f"Could not delete user with id = {str(user_id)}. Error: entity does not exist.")
+        JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                     content=f"Could not delete user with id = {str(user_id)} because entity does not exist.")
 
 
 @router.get("/", status_code=status.HTTP_200_OK)

@@ -65,13 +65,21 @@ def add_session(user_session_body: UserSessionSummary):
 
 @router.delete("/{session_id:int}", status_code=status.HTTP_200_OK)
 def delete_session(session_id: int):
-    try:
-        cursor.execute("delete from user_session where id = ?", (session_id,))
-        logging.info(f"User session with id = {str(session_id)} has been deleted successfully")
-    except mariadb.Error as e:
-        logging.error(f"Could not delete user session with id = {str(session_id)}. Error: {e}")
-        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
-                            content=f"Could not delete user session with id = {str(session_id)}")
+    get_response = get_session(session_id)
+    if get_response.status_code == status.HTTP_200_OK:
+        try:
+            cursor.execute("delete from user_session where id = ?", (session_id,))
+            connection.commit()
+            logging.info(f"User session with id = {str(session_id)} has been deleted successfully")
+        except mariadb.Error as e:
+            logging.error(f"Could not delete user session with id = {str(session_id)}. Error: {e}")
+            return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                                content=f"Could not delete user session with id = {str(session_id)}")
+    else:
+        logging.error(f"Could not delete user session with id = {str(session_id)}. Error: entity does not exist.")
+        JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                     content=f"Could not delete user session with id = {str(session_id)} because entity does not "
+                             f"exist.")
 
 
 @router.get("/", status_code=status.HTTP_200_OK)
