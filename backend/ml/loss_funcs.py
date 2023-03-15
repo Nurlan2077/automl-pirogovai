@@ -8,8 +8,8 @@ LOSS_FUNCS = {
 }
 
 LOSS_FUNCS_REVERSED = {
-	"CCE": losses.SparseCategoricalCrossentropy(from_logits=True),
-	"CategoricalHinge": losses.CategoricalHinge(),
-	"KLDivergence": losses.KLDivergence(),
-	"Poisson": losses.Poisson()
+    "CCE": losses.SparseCategoricalCrossentropy(from_logits=True),
+    "CategoricalHinge": losses.CategoricalHinge(),
+    "KLDivergence": losses.KLDivergence(),
+    "Poisson": losses.Poisson()
 }

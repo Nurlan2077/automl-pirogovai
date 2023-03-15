@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 import asyncio
+import json
 import logging
 import os
 import pathlib
@@ -18,14 +19,14 @@ from fastapi.responses import JSONResponse
 from starlette.responses import StreamingResponse
 from starlette.websockets import WebSocketDisconnect
 
-from .LossFunctionsRouter import get_loss_function_by_name
-from .MetricsRouter import get_metric_by_name
+from .LossFunctionsRouter import get_loss_function_by_name, add_loss_function
+from .MetricsRouter import get_metric_by_name, add_metric
 from .ModelMetricsRouter import add_model_metric
 from .ModelsRouter import add_model
-from .OptimizersRouter import get_optimizer_by_name
+from .OptimizersRouter import get_optimizer_by_name, add_optimizer
 from .connection import Connection
 from .models import UserSession, UserSessionSummary, json_to_schema, HyperParams, Optimizer, LossFunction, ModelSummary, \
-    ModelMetric, Metric
+    ModelMetric, Metric, OptimizerSummary, MetricSummary, LossFunctionSummary
 from .utils import make_update_statement, compare_items, get_created_id, get_id
 from .UsersRouter import send_email
 
@@ -47,9 +48,10 @@ router = APIRouter(prefix="/user-sessions",
 def add_session(user_session_body: UserSessionSummary):
     try:
         cursor.execute(
-            "insert into user_session(dataset_path, data_markup_path, model_path, user_id) values (?, ?, ?, ?)",
+            "insert into user_session(dataset_path, data_markup_path, model_path, user_id, metrics_path) "
+            "values (?, ?, ?, ?, ?)",
             (user_session_body.dataset_path, user_session_body.data_markup_path,
-             user_session_body.model_path, user_session_body.user_id))
+             user_session_body.model_path, user_session_body.user_id, user_session_body.metrics_path))
         connection.commit()
         entity_id = get_created_id(cursor, "user_session")[0][0]
         logging.info(f"User session with body = {str(user_session_body)} has been created successfully")
@@ -81,8 +83,9 @@ def get_sessions():
         if len(result) > 0:
             for row in result:
                 sessions.append(
-                    UserSession(id=row[0], dataset_path=row[1], data_markup_path=row[2],user_id=row[3],
-                                model_path=row[4]))
+                    UserSession(id=row[0], dataset_path=row[1], data_markup_path=row[2], user_id=row[3],
+                                model_path=row[4], metrics_path=row[5])
+                                )
         return JSONResponse(status_code=status.HTTP_200_OK,
                             content=jsonable_encoder(sessions))
     except mariadb.Error as e:
@@ -103,7 +106,7 @@ def get_session(session_id: int):
         logging.info(session_raw[0])
         user_session = UserSession(id=session_raw[0][0], dataset_path=session_raw[0][1],
                                    data_markup_path=session_raw[0][2], user_id=session_raw[0][3],
-                                   model_path=session_raw[0][4])
+                                   model_path=session_raw[0][4], metrics_path=session_raw[0][5])
         return JSONResponse(status_code=status.HTTP_200_OK,
                             content=jsonable_encoder(user_session))
     except mariadb.Error as e:
@@ -113,13 +116,13 @@ def get_session(session_id: int):
 
 
 @router.put("/{session_id:int}", status_code=status.HTTP_200_OK)
-def update_session(session_id: int, session: UserSessionSummary):
+def update_session(session_id: int, summary: UserSessionSummary):
     get_response = get_session(session_id)
     if get_response.status_code == status.HTTP_200_OK:
         old_session = json_to_schema(get_response.body, UserSession)
-        session = UserSession(id=session_id, dataset_path=session.dataset_path,
-                              data_markup_path=session.data_markup_path, model_path=session.model_path,
-                              user_id=session.user_id)
+        session = UserSession(id=session_id, dataset_path=summary.dataset_path,
+                              data_markup_path=summary.data_markup_path, model_path=summary.model_path,
+                              metrics_path=summary.metrics_path, user_id=summary.user_id)
         updates = compare_items(old_session, session)
         statement, inserts = make_update_statement([session_id], "user_session", ["id"], updates)
         if len(inserts) > 1:
@@ -141,16 +144,18 @@ def send_archive(session_id: int):
     if get_response.status_code == status.HTTP_200_OK:
         session = json_to_schema(get_response.body, UserSession)
         model_path = session.model_path
-        file_list = [model_path]
+        metrics_path = session.metrics_path
+        file_list = [model_path, metrics_path]
         logging.info(f'{file_list}')
         zip_io = BytesIO()
         with zipfile.ZipFile(zip_io, mode='w', compression=zipfile.ZIP_DEFLATED) as temp_zip:
             for file in file_list:
-                temp_zip.write(file)
+                name = os.path.basename(file)
+                temp_zip.write(file, arcname=name)
         return StreamingResponse(
             iter([zip_io.getvalue()]),
             media_type="application/x-zip-compressed",
-            headers={"Content-Disposition": f"attachment; filename=models-archive.zip"}
+            headers={"Content-Disposition": f"attachment; filename=archive.zip"}
         )
 
 
@@ -161,7 +166,7 @@ def get_model_optimizer(model_name: str):
     if optimizer_response.status_code == status.HTTP_200_OK:
         optimizer_id = json_to_schema(optimizer_response.body, Optimizer).id
     else:
-        optimizer_id = None
+        optimizer_id = json.loads(add_optimizer(OptimizerSummary(name=optimizer_name)).body)["id"]
     return optimizer_id
 
 
@@ -172,7 +177,7 @@ def get_model_loss_function(model_name: str):
     if loss_function_response.status_code == status.HTTP_200_OK:
         loss_function_id = json_to_schema(loss_function_response.body, LossFunction).id
     else:
-        loss_function_id = None
+        loss_function_id = json.loads(add_loss_function(LossFunctionSummary(name=loss_function_name)).body)["id"]
     return loss_function_id
 
 
@@ -200,7 +205,7 @@ def get_metric_id(metric_name: str):
     if metric_response.status_code == status.HTTP_200_OK:
         metric_id = json_to_schema(metric_response.body, Metric).id
     else:
-        metric_id = None
+        metric_id = json.loads(add_metric(MetricSummary(name=metric_name)).body)["id"]
     return metric_id
 
 
@@ -225,6 +230,13 @@ def get_model_name(path_to_model: str):
     return path_to_model[last_slash + 1:dot]
 
 
+hyperparams: HyperParams
+
+def save_metrics_to_json(metrics: dict, metrics_path: str):
+    with open(metrics_path, "w") as file:
+        file.write(json.dumps(metrics))
+
+
 @router.websocket("/{session_id:int}/progress")
 async def progress_socket(session_id: int, websocket: WebSocket):
     try:
@@ -237,14 +249,17 @@ async def progress_socket(session_id: int, websocket: WebSocket):
             global hyperparams
             try:
                 await websocket.accept()
-                updated_model_path, metrics, epochs = await learn_models(websocket, dataset_path, model_path)
+                updated_model_path, metrics, epochs = await learn_models(websocket, dataset_path, model_path,
+                                                                         data_markup_path, hyperparams.__dict__)
                 session_summary = UserSessionSummary(dataset_path=dataset_path,
                                                      data_markup_path=data_markup_path,
                                                      model_path=updated_model_path,
+                                                     metrics_path=session.model_path + "/metrics.json",
                                                      user_id=session.user_id)
                 update_session(session_id, session_summary)
                 model_id = save_model_to_db(get_model_name(updated_model_path), session_id, epochs)
                 save_model_metrics_to_db(model_id, metrics)
+                save_metrics_to_json(metrics, session_summary.metrics_path)
                 await asyncio.sleep(1)
                 await websocket.send_text(f"model id: {model_id}")
                 await asyncio.sleep(1)
@@ -257,11 +272,8 @@ async def progress_socket(session_id: int, websocket: WebSocket):
         logging.error(f"Could not make learning for session = {session_id}. Error: {e}")
 
 
-hyperparams: HyperParams
-
-
-@router.post("/{session_id:int}/learn", status_code=status.HTTP_200_OK)
-def launch_learning(session_id: int, hyperparams_: HyperParams):
+@router.post("/{session_id:int}/hyperparams", status_code=status.HTTP_200_OK)
+def get_hyperparams(session_id: int, hyperparams_: HyperParams):
     try:
         get_response = get_session(session_id)
         if get_response.status_code == status.HTTP_200_OK:
@@ -321,7 +333,9 @@ async def upload_dataset(session_id: int, file: UploadFile):
                 update = UserSessionSummary(dataset_path=path_to_dir + "/",
                                             data_markup_path=body.data_markup_path,
                                             model_path=model_path + "/",
+                                            metrics_path=body.metrics_path,
                                             user_id=body.user_id)
+                logging.info(update.metrics_path)
                 return update_session(session_id, update)
             else:
                 logging.error("Could not upload dataset file")
@@ -350,6 +364,7 @@ def upload_markup(session_id: int, file: UploadFile):
                 update = UserSessionSummary(dataset_path=body.dataset_path,
                                             data_markup_path=path_to_markup,
                                             model_path=body.model_path,
+                                            metrics_path=body.metrics_path,
                                             user_id=body.user_id)
                 return update_session(session_id, update)
             else:
