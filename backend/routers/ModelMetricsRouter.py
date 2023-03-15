@@ -41,15 +41,24 @@ def add_model_metric(model_metric_body: ModelMetric):
 
 @router.delete("/{metric_id}-{model_id}", status_code=status.HTTP_200_OK)
 def delete_model_metric(metric_id: int, model_id: int):
-    try:
-        cursor.execute("delete from model_metric where metric_id = ? and model_id = ?", (metric_id, model_id))
-        logging.info(f"Model metric with id = {str(metric_id)} has been deleted successfully")
-    except mariadb.Error as e:
-        logging.error(f"Could not delete model metric with metric id = {str(metric_id)} and model id = {str(model_id)}."
-                      f" Error: {e}")
-        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
-                            content=f"Could not delete model metric with metric id = {str(metric_id)} and "
-                                    f"model id = {str(model_id)}")
+    get_response = get_model_metric(model_id, metric_id)
+    if get_response.status_code == status.HTTP_200_OK:
+        try:
+            cursor.execute("delete from model_metric where metric_id = ? and model_id = ?", (metric_id, model_id))
+            connection.commit()
+            logging.info(f"Model metric with id = {str(metric_id)} has been deleted successfully")
+        except mariadb.Error as e:
+            logging.error(f"Could not delete model metric with metric id = {str(metric_id)} and model id = {str(model_id)}."
+                          f" Error: {e}")
+            return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                                content=f"Could not delete model metric with metric id = {str(metric_id)} and "
+                                        f"model id = {str(model_id)}")
+        else:
+            logging.error(f"Could not delete model metric with metric id = {str(metric_id)} "
+                          f"and model id = {str(model_id)}. Error: entity does not exist.")
+            JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                         content=f"Could not delete model metric with metric id = {str(metric_id)} and model id = "
+                                 f"{str(model_id)} because entity does not exist.")
 
 
 @router.put("/{metric_id}-{model_id}", status_code=status.HTTP_200_OK)
