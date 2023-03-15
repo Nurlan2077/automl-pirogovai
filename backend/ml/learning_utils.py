@@ -15,6 +15,8 @@ from fastapi import WebSocket
 from tensorflow.compat.v1 import ConfigProto
 from tensorflow.compat.v1 import InteractiveSession
 
+from train_and_save_model import train
+
 config = ConfigProto()
 config.gpu_options.allow_growth = True
 session = InteractiveSession(config=config)
@@ -45,8 +47,7 @@ async def learn_models(websocket: WebSocket, dataset_path: str, models_path: str
         for loss_func in LOSS_FUNCS_REVERSED:
             if loss_func not in params["lossFunction"]:
                 continue
-            os.system("python ml/train_and_save_model.py {} {} {} {} {}".
-                      format(optimizer, loss_func, epochs, dataset_path, models_path))
+            train(optimizer, loss_func, epochs, dataset_path, models_path)
             i += 1
             logging.info(f"{i * 100 / total_count}%")
             await websocket.send_text(f"{i * 100 / total_count}%")
