@@ -1,16 +1,22 @@
-function login() {
+async function login() {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
-    const loginUrl = "https://auth.pirogov.ai/remote_login";
+    /* TODO:
+        change loginUrl to https://auth.pirogov.ai/remote_login when this service will be available
+     */
+    const loginUrl = "http://pirogov-backend.net:8000/users/login";
     const authenticateUrl = "http://pirogov-backend.net:8000/users/authenticate";
 
     // Make the first POST request
-    fetch(loginUrl, {
+    await fetch(loginUrl, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
+            /* TODO:
+                change key when login service will be available
+             */
             key: 0,
             login: email,
             password: password
@@ -22,9 +28,9 @@ function login() {
             }
             return response.json();
         })
-        .then(result => {
+        .then(async result => {
             // Make the second POST request
-            return fetch(authenticateUrl, {
+            return await fetch(authenticateUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -36,9 +42,10 @@ function login() {
                 })
             });
         })
-        .then(response => {
+        .then(async response => {
             if (response.status === 200) {
-                sessionStorage.setItem('user_id', response.json().user_id);
+                id = (await response.json()).id
+                sessionStorage.setItem('userId', id);
                 alert("Вход успешен!")
                 window.location.replace("http://0.0.0.0:3000/start-session")
             } else {
