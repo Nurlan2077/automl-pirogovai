@@ -109,6 +109,12 @@ class User(BaseModel):
     email: str
 
 
+class LoginSummary(BaseModel):
+    key: int
+    login: str
+    password: str
+
+
 def json_to_schema(json_bytes, schema_type: BaseModel.__class__):
     schema = json.loads(json_bytes.decode('utf-8'))
     return parse_obj_as(schema_type, schema)

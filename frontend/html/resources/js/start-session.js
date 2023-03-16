@@ -1,5 +1,5 @@
 async function postSessionId() {
-    const id = 0;
+    const id = sessionStorage.getItem("userId");
     let json_item = {
         "dataset_path": "",
         "data_markup_path": "",

@@ -1,18 +1,19 @@
 #!/usr/bin/env python
 # coding: utf-8
+import logging
 import os
+from random import randint
 
+import mariadb
 from dotenv import load_dotenv
+from fastapi import APIRouter, status
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 from fastapi_mail import MessageSchema, FastMail, ConnectionConfig
 
 from .connection import Connection
-from fastapi import APIRouter, status
-from fastapi.responses import JSONResponse
-from fastapi.encoders import jsonable_encoder
-import mariadb
-from .models import User, json_to_schema
+from .models import User, LoginSummary, json_to_schema
 from .utils import compare_items, make_update_statement
-import logging
 
 load_dotenv(f".env")
 
@@ -62,7 +63,20 @@ async def send_message(user_name: str, user_email: str):
     await fm.send_message(message, template_name='email.html')
 
 
-@router.post("/authorize")
+# TODO: remove this endpoint when login service will be available
+@router.post("/login")
+def authorize(login: LoginSummary):
+    return JSONResponse(status_code=status.HTTP_200_OK,
+                        content={
+                            "user_id": randint(0, 10000),
+                            "user_info": {
+                                "name": "Test user",
+                                "email": "testuser@gmail.com"
+                            }
+                        })
+
+
+@router.post("/authenticate")
 def authorize(user: User):
     get_response = get_user(user.id)
     if get_response.status_code == status.HTTP_200_OK:
