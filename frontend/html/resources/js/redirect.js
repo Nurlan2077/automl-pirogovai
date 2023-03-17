@@ -1,4 +1,4 @@
-const userId = sessionStorage.getItem("user_id");
+const userId = sessionStorage.getItem("userId");
 
 // If user_id is undefined, redirect to the login page
 if (!userId) {
