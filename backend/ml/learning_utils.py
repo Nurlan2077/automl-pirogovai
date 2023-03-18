@@ -126,9 +126,11 @@ def train_model(optimizer_name, loss_name, epochs, models_path, train, val, img_
     model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
     model.fit(train, validation_data=val, epochs=epochs, callbacks=callbacks)
 
-    tf_model = tf.keras.models.load_model(model_path)
-    tf_model.save(model_path[:-2] + "h5")
-    shutil.rmtree(model_path)
+    if os.path.exists(model_path):
+        tf_model = tf.keras.models.load_model(model_path)
+        tf_model.save(model_path[:-2] + "h5")
+        shutil.rmtree(model_path)
+        
     tf.keras.backend.clear_session()
 
 
