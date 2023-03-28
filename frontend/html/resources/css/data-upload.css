@@ -1,6 +1,6 @@
 body {
   text-align: center;
-  position:relative;
+  position: relative;
   font-family: sans-serif;
 }
 
@@ -16,13 +16,14 @@ p {
   border: 2px dashed #ccc;
   border-radius: 20px;
   width: 480px;
-  margin: 50px auto;
-  padding: 20px;
+  margin-top: 0.5%;
+  margin-bottom: 3%;
+  padding: 40px;
   display: inline-block;
 }
 
 .drop-area.highlight {
-  border-color: rgb(0, 221, 250);
+  border-color: #57d7f1;
 }
 
 .fileName {
@@ -35,4 +36,22 @@ p {
 
 .fileElem {
   display: none;
+}
+
+.form-group {
+  margin: 0 auto;
+  margin-top: 10%;
+  margin-bottom: 2%;
+  padding: 5%;
+  background-color: #fff;
+  box-shadow: 0 5px 8px 0 rgba(0, 0, 0, 0.2), 0 9px 26px 0 rgba(0, 0, 0, 0.19);
+}
+
+.form-group h3 {
+  text-align: center;
+  color: #333;
+}
+
+.form-group .btn {
+  box-shadow: 0 5px 8px 0 rgba(0, 0, 0, 0.2), 0 9px 26px 0 rgba(0, 0, 0, 0.19);
 }
