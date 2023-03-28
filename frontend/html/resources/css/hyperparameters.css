@@ -1,0 +1,23 @@
+div h3 {
+    display: inline;
+    vertical-align: middle;
+    color: #333;
+}
+
+.form-group {
+    padding: 1%;
+}
+
+.main-form {
+    margin: 0 auto;
+    margin-top: 10%;
+    margin-bottom: 2%;
+    padding: 5%;
+    background-color: #fff;
+    box-shadow: 0 5px 8px 0 rgba(0, 0, 0, 0.2), 0 9px 26px 0 rgba(0, 0, 0, 0.19);
+}
+
+
+.main-form input {
+    box-shadow: 0 5px 8px 0 rgba(0, 0, 0, 0.2), 0 9px 26px 0 rgba(0, 0, 0, 0.19);
+}
