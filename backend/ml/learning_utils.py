@@ -138,6 +138,7 @@ def get_best_model_and_metrics(models_path, val, class_names: list[str]):
     prev = 0
     best_model_file = None
     report = None
+    best_report = None
 
     val_labels = np.concatenate([y for _, y in val], axis=0)
 
@@ -149,9 +150,10 @@ def get_best_model_and_metrics(models_path, val, class_names: list[str]):
 
         if report["weighted avg"]["f1-score"] > prev:
             prev = report["weighted avg"]["f1-score"]
+            best_report = report
             best_model_file = file
 
-    return best_model_file, report
+    return best_model_file, best_report
 
 
 def get_image_size(dataset_path: str) -> tuple[int, int]:
