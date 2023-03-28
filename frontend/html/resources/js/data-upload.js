@@ -113,7 +113,7 @@ function initializeProgress(numFiles, uploadProgress, progressBar) {
 
 function updateProgress(fileNumber, percent, uploadProgress, progressBar) {
     uploadProgress[fileNumber] = percent
-    progressBar.style.width = uploadProgress.reduce((tot, curr) => tot + curr, 0) / uploadProgress.length
+    progressBar.style.width = uploadProgress.reduce((tot, curr) => tot + curr, 0) / uploadProgress.length + "%"
 }
 
 function submit() {
