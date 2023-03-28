@@ -41,5 +41,5 @@ fetch(`http://pirogov-backend.net:8000/model-metrics/with-names/${modelId}`)
     .catch(error => {
         // Handle the error
         console.error(error);
-        responseElement.innerText = "An error occurred while fetching the data.";
+        responseElement.innerText = "Произошла ошибка при загрузке результата. Попробуйте позднее";
     });
