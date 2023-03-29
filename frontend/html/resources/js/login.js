@@ -1,3 +1,9 @@
+const userId = sessionStorage.getItem("userId");
+if (userId && (!window.location.pathname || window.location.pathname.includes("/index") || window.location.pathname === "/")) {
+    window.location.replace("http://0.0.0.0:3000/start-session");
+    alert("Вы уже вошли в аккаунт");
+}
+
 async function login() {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
