@@ -121,8 +121,7 @@ def train_model(optimizer_name, loss_name, epochs, models_path, train, val, img_
     model_path = models_path + model_name + ".tf"
     callbacks = [
         EarlyStopping(monitor='val_loss', patience=5),
-        ModelCheckpoint(filepath=model_path, save_best_only=True),
-        TerminateOnNaN()
+        ModelCheckpoint(filepath=model_path, save_best_only=True)
     ]
 
     model = Sequential(sequential_layers)
