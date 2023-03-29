@@ -6,6 +6,11 @@ if (!userId) {
   alert("Вы не вошли в аккаунт");
 }
 
+if (userId & window.location.pathname == "/index") {
+  window.location.replace("http://0.0.0.0:3000/start-session");
+  alert("Вы уже вошли в аккаунт");
+}
+
 // Make the GET request
 const url = `http://pirogov-backend.net:8000/users/${userId}`;
 fetch(url)
