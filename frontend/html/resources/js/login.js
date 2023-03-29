@@ -24,7 +24,7 @@ async function login() {
     })
         .then(response => {
             if (response.status !== 200) {
-                throw new Error('Authentication failed');
+                throw new Error('Ошибка аутентификации! Проверьте правильность введенных данных');
             }
             return response.json();
         })
@@ -49,7 +49,7 @@ async function login() {
                 alert("Вход успешен!")
                 window.location.replace("http://0.0.0.0:3000/start-session")
             } else {
-                throw new Error('Authentication failed');
+                throw new Error('Ошибка аутентификации! Проверьте правильность введенных данных');
             }
         })
         .catch(error => {

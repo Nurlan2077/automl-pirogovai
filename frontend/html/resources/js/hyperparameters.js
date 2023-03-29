@@ -34,7 +34,10 @@ function submitData() {
 
     fetch(`http://pirogov-backend.net:8000/user-sessions/${id}/hyperparams`, fetchOptions)
         .then(response => {
-            alert("Гиперпараметры были отправлены!")
-            window.location.replace("http://0.0.0.0:3000/progress-bar")
+            if (response.status === 200) {
+                alert("Гиперпараметры были отправлены!")
+                window.location.replace("http://0.0.0.0:3000/progress-bar")
+            }
+            else alert("Произошла ошибка при передаче гиперпараметров, перезагрузите страницу или попробуйте позднее")
         });
 }

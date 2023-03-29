@@ -19,4 +19,5 @@ async function postSessionId() {
         sessionStorage.setItem("sessionId", result.id);
         window.location.replace("http://0.0.0.0:3000/data-upload");
     }
+    else alert("Не удалось начать новую сессию. Повторите попытку позже")
 }

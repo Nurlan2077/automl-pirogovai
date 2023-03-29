@@ -1,3 +1,4 @@
+import asyncio
 import glob
 import logging
 import os
@@ -45,11 +46,13 @@ async def learn_models(websocket: WebSocket, dataset_path: str,
     logging.info(f"Total count: {total_count}")
 
     await websocket.send_text("1%")
+    await asyncio.sleep(1)
     for optimizer, loss in product(params['optimizer'], params['lossFunction']):
         train_model(optimizer, loss, epochs, models_path, train, val, img_size, classes)
         learned += 1
         logging.info(f"{learned * 100 / total_count}%")
         await websocket.send_text(f"{learned * 100 / total_count}%")
+        await asyncio.sleep(1)
 
     model_path, report = get_best_model_and_metrics(models_path, val, classes)
     metrics = {
