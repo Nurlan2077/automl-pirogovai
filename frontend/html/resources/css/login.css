@@ -1,17 +1,21 @@
-.form-group{
+.form-group {
     padding: 1%;
 }
-.login-form{
+
+.login-form {
     margin: 0 auto;
-    margin-top: 5%;
+    margin-top: 10%;
     margin-bottom: 5%;
     padding: 5%;
+    background-color: #fff;
     box-shadow: 0 5px 8px 0 rgba(0, 0, 0, 0.2), 0 9px 26px 0 rgba(0, 0, 0, 0.19);
 }
-.login-form h3{
+
+.login-form h3 {
     text-align: center;
     color: #333;
 }
-.login-container form{
-    padding: 10%;
+
+.login-form .btn {
+    box-shadow: 0 5px 8px 0 rgba(0, 0, 0, 0.2), 0 9px 26px 0 rgba(0, 0, 0, 0.19);
 }

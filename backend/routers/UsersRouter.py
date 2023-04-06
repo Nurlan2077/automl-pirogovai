@@ -65,7 +65,7 @@ async def send_message(user_name: str, user_email: str):
 
 # TODO: remove this endpoint when login service will be available
 @router.post("/login")
-def authorize(login: LoginSummary):
+def login(login_summary: LoginSummary):
     return JSONResponse(status_code=status.HTTP_200_OK,
                         content={
                             "user_id": randint(0, 10000),

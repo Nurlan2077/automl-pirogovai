@@ -1,3 +1,8 @@
+function togglePopup() {
+    let popup = document.getElementById('popup')
+    popup.classList.toggle("show");
+}
+
 function is_default(val) {
     return val.toLowerCase() === "default"
 }
@@ -13,11 +18,11 @@ function submitData() {
                 break
             case "optimizer":
                 if (!(pair[0] in json_items)) json_items[pair[0]] = []
-                    json_items[pair[0]].push(pair[1])
+                json_items[pair[0]].push(pair[1])
                 break
             case "lossFunction":
                 if (!(pair[0] in json_items)) json_items[pair[0]] = []
-                    json_items[pair[0]].push(pair[1])
+                json_items[pair[0]].push(pair[1])
                 break
         }
     }

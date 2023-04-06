@@ -1,6 +1,10 @@
-div {
-    font-family: sans-serif;
-    position: absolute;
-    top: 50%;
-    left: 25%;
+.form-group {
+    margin: 0 auto;
+    margin-top: 10%;
+    margin-bottom: 5%;
+    padding: 5%;
+}
+
+.form-group .btn {
+    box-shadow: 0 5px 8px 0 rgba(0, 0, 0, 0.2), 0 9px 26px 0 rgba(0, 0, 0, 0.19);
 }

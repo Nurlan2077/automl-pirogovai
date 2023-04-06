@@ -323,7 +323,6 @@ async def upload_dataset(session_id: int, file: UploadFile):
                 rf.extractall(path_to_dir)
             else:
                 file_name = file.filename
-                # Write the contents of the UploadFile object to disk
                 with open(f"{path_to_dir}/{file_name}", 'wb') as f:
                     while True:
                         chunk = await file.read(512 * 1024)

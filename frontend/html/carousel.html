@@ -2,26 +2,42 @@
 <html lang="ru">
 
 <head>
+    <link rel="shortcut icon" href="html/resources/images/main-p.ico">
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link rel="shortcut icon" href="html/resources/images/img.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Результат обучения</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+    <link rel="stylesheet" href="path/to/font-awesome/css/font-awesome.min.css">
+    <link href="html/resources/css/ambient-background.css" rel="stylesheet">
+    <link href="html/resources/css/navigation.css" rel="stylesheet">
     <link href="html/resources/css/carousel.css" rel="stylesheet">
     <script src="html/resources/js/redirect.js"></script>
 </head>
 
 <body>
-    <div class="d-flex flex-column min-vh-100 justify-content-center align-items-center">
+    <div class="col-md-6 d-flex flex-column justify-content-center align-items-center form-group">
+        <h3>Результат обучения</h3>
         <p id="modelName"></p>
         <p id="metrics"></p>
-        <a href="" id="download" style="display: none;" download>Скачать модель и метрики</a>
+        <a href="" id="download" style="display: none;" type="button" class="btn btn-outline-dark btn-rounded" download>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download"
+                viewBox="0 0 16 16">
+                <path
+                    d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
+                <path
+                    d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z" />
+            </svg>
+            Скачать модель и метрики
+        </a>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN"
         crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.5.0/jszip.min.js"></script>
+    <script src="html/resources/js/ambient-background.js"></script>
     <script src="html/resources/js/navigation.js"></script>
     <script src="html/resources/js/carousel.js"></script>
 </body>
